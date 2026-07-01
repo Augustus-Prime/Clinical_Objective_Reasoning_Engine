@@ -18,39 +18,49 @@ Ensure you have **Python 3.10, 3.11, or 3.12** installed on your machine.
 1. **Create your local Virtual Environment:**
    ```bash
    python -m venv venv
-Activate the environment:
+   ```
+2. **Activate the environment:**
 
-Windows (PowerShell): .\venv\Scripts\Activate.ps1
+Windows (PowerShell): 
+```powershell
+.\venv\Scripts\Activate.ps1
+```
 
-Mac / Linux: source venv/bin/activate
+Mac / Linux: 
+```bash
+source venv/bin/activate
+```
 
-Install the required packages:
+3. **Install the required packages:**
 
-Bash
+```bash
 pip install -r requirements.txt
+```
 Download the local NLP Text Scanner model:
 
-Bash
+```bash
 python -m spacy download en_core_web_sm
+```
 
+## 📂 Data Execution Flow
+1. Create a folder named input in the root directory.
 
-2. 📂 Data Execution Flow
-Create a folder named input in the root directory.
-
-Drop any raw audio file (.m4a, .mp3, .wav) into the input/ folder.
+2. Drop any raw audio file (.m4a, .mp3, .wav) into the input/ folder.
 
 3. Run the GPU-adaptive transcription script (injecting your token):
    * **Windows:** `$env:HF_TOKEN="your_token_here"; python transcribe.py`
    * **Mac/Linux:** `export HF_TOKEN="your_token_here"; python transcribe.py`
+   
 (Generates [YourFileName]_raw.json)
 
 4. Run the local HIPAA de-identification script:
 
-Bash
+```bash
 python deidentify.py
+```
 (Generates [YourFileName]_deidentified.json)
 
-🧠 Hardware Compatibility
+## 🧠 Hardware Compatibility
 The transcribe.py script automatically scales to your hardware:
 
 NVIDIA GPU: Runs lightning-fast via CUDA (float16).
