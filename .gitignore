@@ -2,4 +2,20 @@ venv/
 *_raw.json
 *_deidentified.json
 .DS_Store
-data/
+
+# Ignore all files inside the Data directory
+Data/**/*
+
+# But do not ignore the directory structure itself
+!Data/**/
+
+# Explicitly ignore media and data formats everywhere
+*.mp3
+*.wav
+*.m4a
+*.flac
+*.mp4
+*.json
+*.csv
+*.txt
+!requirements.txt
