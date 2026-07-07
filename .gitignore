@@ -1,5 +1,5 @@
 venv/
-input/
 *_raw.json
 *_deidentified.json
 .DS_Store
+data/

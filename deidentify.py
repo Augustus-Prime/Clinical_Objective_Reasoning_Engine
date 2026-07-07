@@ -1,79 +1,110 @@
 import json
 import os
 import sys
-import spacy
+import shutil
+import re
+import ollama  # Handles the local LLM communication
 
-# --- CONFIGURATION ---
-INPUT_DIR = "input"
-# Automatically find the raw JSON we just generated
-supported_extensions = ('.m4a', '.mp3', '.wav', '.mp4', '.aac')
-audio_files = [f for f in os.listdir(INPUT_DIR) if f.lower().endswith(supported_extensions)]
+print("🔒 Initializing Local LLM De-Identification Pipeline...")
 
-if not audio_files:
-    print("❌ Error: No audio files found in input directory to map to JSON.")
-    sys.exit()
-
-base_name = os.path.splitext(audio_files[0])[0]
-input_json_file = f"{base_name}_raw.json"
-output_clean_file = f"{base_name}_deidentified.json"
-
-print("🔒 Initializing Local Medical NLP De-Identification Pipeline...")
-# Load the smart text-scanning model
-nlp = spacy.load("en_core_web_sm")
-
-# Medical concept protection checklist (Eponyms/Jargon that look like names)
-MEDICAL_PROTECTION_WORDS = {
-    "parkinson", "parkinson's", "alzheimer", "alzheimer's", "graves", 
-    "achilles", "hodgkin", "crohn", "crohn's", "down", "down's", "wilson"
-}
+# Simple platform exceptions that the LLM shouldn't count as people
+PLATFORM_EXCEPTIONS = {"zoom", "canvas", "teams", "panopto", "anki", "sketchy", "jesus", "christ"}
 
 def scrub_clinical_text(text, name_map):
-    """Scans text using NLP to find real names while protecting medical context."""
+    """Uses a local LLM to contextually extract names from chaotic audio 
+    while natively protecting medical concepts."""
     if not text.strip():
         return text
+
+    # Define the strict prompt for the model
+    prompt = f"""
+    You are a secure data redaction assistant. Read the following raw, unpunctuated audio transcript segment and extract ONLY the names of students, practitioners, or speakers.
+    
+    CRITICAL RULES:
+    1. Do NOT extract medical diseases, eponyms (like Parkinson's, Alzheimer's, Graves), or cities/universities.
+    2. Respond ONLY with a raw comma-separated list of the names found. 
+    3. If no names are found, respond with the word "NONE".
+    
+    Transcript: "{text}"
+    Names found:
+    """
+
+    try:
+        # Use a lightweight, blazing-fast model (llama3 or mistral)
+        response = ollama.generate(model='llama3', prompt=prompt)
+        response_text = response['response'].strip()
         
-    doc = nlp(text)
-    cleaned_text = text
-    
-    # Track entities backwards so character positions don't shift when replacing text
-    entities = sorted(doc.ents, key=lambda e: e.start_char, reverse=True)
-    
-    for ent in entities:
-        # We only want to censor actual people names (PERSON tag)
-        if ent.label_ == "PERSON":
-            original_name = ent.text
+        if "NONE" not in response_text.upper() and response_text:
+            # Split the comma-separated names from the LLM
+            extracted_names = [name.strip() for name in response_text.split(",") if name.strip()]
             
-            # GUARDRAIL: If the 'Name' is actually a protected medical term, skip it!
-            if original_name.lower() in MEDICAL_PROTECTION_WORDS:
-                continue
+            for name in extracted_names:
+                name_lower = name.lower()
+                # Skip platform guardrails
+                if name_lower in PLATFORM_EXCEPTIONS or len(name) <= 2:
+                    continue
                 
-            # Assign a permanent anonymous token to this specific name
-            if original_name not in name_map:
-                name_map[original_name] = f"[STUDENT_{len(name_map) + 1}]"
+                # Register the name dynamically if we haven't seen it yet
+                if name not in name_map:
+                    name_map[name] = f"[STUDENT_{len(name_map) + 1}]"
+                    
+                # Deterministically swap out the name across this segment case-insensitively
+                pattern = re.compile(r'\b' + re.escape(name) + r'\b', re.IGNORECASE)
+                text = pattern.sub(name_map[name], text)
                 
-            # Swap the real name out for the safe token
-            cleaned_text = cleaned_text[:ent.start_char] + name_map[original_name] + cleaned_text[ent.end_char:]
+    except Exception as e:
+        print(f"  ⚠️ LLM Processing temporary skip: {e}")
+        
+    return text
+
+
+# ======================================================================
+# 📂 MULTI-FOLDER SCANNING & ARCHIVING LOGIC (Your Exact Working Code!)
+# ======================================================================
+TARGET_FOLDERS = ["data/synthetic_transcripts", "data/diarized_transcripts"]
+OUTPUT_CLEAN_DIR = "data/deidentified_transcripts"
+ARCHIVE_DIR = "data/archive"
+
+os.makedirs(OUTPUT_CLEAN_DIR, exist_ok=True)
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
+processed_count = 0
+
+for folder in TARGET_FOLDERS:
+    if not os.path.exists(folder):
+        continue
+        
+    print(f"\n📂 Scanning directory: {folder}...")
+    json_files = [f for f in os.listdir(folder) if f.lower().endswith('.json') and not f.endswith('_deidentified.json')]
+    
+    for json_file in json_files:
+        input_json_path = os.path.join(folder, json_file)
+        clean_file_name = json_file.replace(".json", "_deidentified.json")
+        output_clean_path = os.path.join(OUTPUT_CLEAN_DIR, clean_file_name)
+        archive_path = os.path.join(ARCHIVE_DIR, json_file)
+        
+        print(f"  🔄 Scrubbing file via Contextual LLM: {json_file}")
+        
+        try:
+            with open(input_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                
+            name_registry = {}
+            for segment in data.get("segments", []):
+                segment["text"] = scrub_clinical_text(segment.get("text", ""), name_registry)
+                
+            with open(output_clean_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            print(f"  ✅ Protected data saved to: {output_clean_path}")
             
-    return cleaned_text
+            shutil.move(input_json_path, archive_path)
+            print(f"  📦 Archived original raw file to: {archive_path}")
+            
+            if name_registry:
+                print(f"     Redacted Names Registry: {json.dumps(name_registry)}")
+            processed_count += 1
+            
+        except Exception as e:
+            print(f"  ❌ Failed to process {json_file}. Error: {e}")
 
-# 1. Load the raw JSON transcript
-try:
-    with open(input_json_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-except FileNotFoundError:
-    print(f"❌ Error: Could not find '{input_json_file}'. Please run transcribe.py first.")
-    sys.exit()
-
-print(f"📂 Processing file: {input_json_file}")
-
-# 2. Loop through every single conversational turn
-name_registry = {}
-for segment in data.get("segments", []):
-    segment["text"] = scrub_clinical_text(segment.get("text", ""), name_registry)
-
-# 3. Save the clean, HIPAA-safe dataset
-with open(output_clean_file, "w", encoding="utf-8") as f:
-    json.dump(data, f, indent=2, ensure_ascii=False)
-
-print(f"🎉 Success! Protected data saved completely to '{output_clean_file}'")
-print(f"👥 Redacted Names Registry: {json.dumps(name_registry)}")
+print(f"\n🎉 Done! Successfully processed and cleaned {processed_count} file(s).")

@@ -1,3 +1,4 @@
-torch
-whisperx
-spacy
+anthropic==0.116.0
+ollama==0.6.2
+torch==2.12.1
+whisperx==3.8.6

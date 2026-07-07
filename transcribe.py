@@ -6,7 +6,7 @@ import sys
 from whisperx.diarize import DiarizationPipeline
 
 # --- AUTOMATED INPUT & HARDWARE CONFIGURATION ---
-INPUT_DIR = "input"
+INPUT_DIR = "data/raw_audio"
 HF_TOKEN = os.getenv("HF_TOKEN")
 
 # Automatically choose the best hardware available
@@ -40,7 +40,8 @@ audio_file = os.path.join(INPUT_DIR, target_file_name)
 
 # 4. Generate dynamic output file name based on input file name
 base_name = os.path.splitext(target_file_name)[0]  # e.g., "Recording (2)"
-output_json_file = f"{base_name}_raw.json"         # e.g., "Recording (2)_raw.json"
+os.makedirs("data/diarized_transcripts", exist_ok=True)
+output_json_file = f"data/diarized_transcripts/{base_name}_raw.json"
 
 print(f"🎬 Initializing local AI engine...")
 print(f"📂 Automatically detected file: {audio_file}")
@@ -61,7 +62,7 @@ result = whisperx.align(result["segments"], model_a, metadata, audio, device, re
 
 # 4. Run Speaker Diarization
 print("👥 Analyzing voices and mapping speakers...")
-diarize_model = DiarizationPipeline(token=HF_TOKEN, device=device)
+diarize_model = DiarizationPipeline(use_auth_token=HF_TOKEN, device=device)
 diarize_segments = diarize_model(audio)
 
 # 5. Fuse Speakers into the Transcript
