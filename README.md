@@ -8,10 +8,10 @@ An automated, privacy-first clinical transcription and analysis pipeline. This s
 ## 🏗️ Core Pipeline Architecture
 The pipeline transitions raw audio records safely through four progressive stages:
 
-1. **Simulation Engine (`generator_script.py`):** Simulates synthetic, edge-case conversation transcripts containing complex formatting and diverse PHI profiles to test downstream systems without exposure risks.
-2. **Transcription & Diarization (`transcribe_script.py`):** Leverages **WhisperX** to isolate multi-speaker speech boundaries and outputs aligned transcripts.
-3. **Local PHI De-Identification (`deidentify_script.py`):** Runs a local **Ollama** LLM instance to strip explicit identification markers (e.g., swapping names to `[STUDENT_1]`) directly in your hardware memory. No raw metrics leak outside.
-4. **Pedagogical Structuring (`transcript_to_events.py`):** Evaluates cleaner text through **Claude 3.5 Sonnet** to extract precise educational micro-events, timeline logs, and instructional behaviors into structured JSON formats.
+1. **Simulation Engine (`generate_mock_data.py`):** Simulates synthetic, edge-case conversation transcripts containing complex formatting and diverse PHI profiles to test downstream systems without exposure risks.
+2. **Transcription & Diarization (`transcribe.py`):** Leverages **WhisperX** to isolate multi-speaker speech boundaries and outputs aligned transcripts.
+3. **Local PHI De-Identification (`deidentify.py`):** Runs a local **Ollama** LLM instance to strip explicit identification markers (e.g., swapping names to `[STUDENT_1]`) directly in your hardware memory. No raw metrics leak outside.
+4. **Pedagogical Structuring (`event_generation.py`):** Evaluates cleaner text through **Claude 3.5 Sonnet** to extract precise educational micro-events, timeline logs, and instructional behaviors into structured JSON formats.
 
 ---
 
