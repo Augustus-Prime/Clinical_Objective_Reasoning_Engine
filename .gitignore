@@ -18,4 +18,8 @@ Data/**/*
 *.json
 *.csv
 *.txt
-!requirements.txt
+!requirements.txt__pycache__/
+
+__pycache__/
+*.pyc
+

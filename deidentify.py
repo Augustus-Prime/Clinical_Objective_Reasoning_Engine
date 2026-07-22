@@ -90,12 +90,19 @@ for folder in TARGET_FOLDERS:
                 data = json.load(f)
                 
             name_registry = {}
+            unique_speakers = set()
+            
             for segment in data.get("segments", []):
                 segment["text"] = scrub_clinical_text(segment.get("text", ""), name_registry)
+                # 🏷️ Track unique raw speakers (e.g., SPEAKER_00, SPEAKER_01)
+                if segment.get("speaker"):
+                    unique_speakers.add(segment["speaker"])
+            
+            # 🛠️ Automatically inject an anonymous speaker map to satisfy his script's contract
+            data["speaker_map"] = {speaker: f"Participant_{i+1}" for i, speaker in enumerate(sorted(unique_speakers))}
                 
             with open(output_clean_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            print(f"  ✅ Protected data saved to: {output_clean_path}")
             
             shutil.move(input_json_path, archive_path)
             print(f"  📦 Archived original raw file to: {archive_path}")
