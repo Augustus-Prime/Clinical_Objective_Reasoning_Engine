@@ -1,0 +1,901 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORE — Accreditation Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --cream:#F6F1E7;
+    --paper:#FFFDF8;
+    --ink:#2A2420;
+    --ink-soft:#6B6255;
+    --line:#DDD3C0;
+    --rust:#B14C2C;
+    --rust-bg:#F3E1D8;
+    --gold:#96773A;
+    --gold-bg:#F0E6D2;
+    --sage:#5E7350;
+    --sage-bg:#E7EBE1;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:40px 20px 80px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+
+  .sheet{
+    max-width:920px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(42,36,32,0.05), 0 12px 32px -18px rgba(42,36,32,0.18);
+  }
+
+  /* ---------- Header ---------- */
+  .masthead{ padding:36px 44px 28px; border-bottom:2px solid var(--ink); position:relative; }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--rust); margin:0 0 10px;
+  }
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:36px; line-height:1.08; margin:0 0 8px; letter-spacing:-0.01em; }
+  .subtitle{ font-size:15px; color:var(--ink-soft); max-width:60ch; margin:0; }
+
+  /* ---------- Vitals strip ---------- */
+  .vitals{ display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line); }
+  .vital{ padding:20px 18px; border-right:1px solid var(--line); }
+  .vital:last-child{border-right:none;}
+  .vital .num{ font-family:'Fraunces',serif; font-weight:600; font-size:27px; line-height:1; }
+  .vital .label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.07em; text-transform:uppercase; color:var(--ink-soft); margin-top:6px; }
+
+  section{padding:34px 44px;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+
+  .section-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:6px; flex-wrap:wrap; }
+  .section-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em;
+    color:var(--paper); background:var(--ink); padding:3px 8px;
+  }
+  h2{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; margin:0; }
+  .section-note{ font-size:13px; color:var(--ink-soft); margin:8px 0 20px; max-width:64ch; }
+
+  /* ---------- Distribution chart ---------- */
+  .chart-wrap{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;}
+  svg text{font-family:'JetBrains Mono',monospace;}
+  .median-label{ font-family:'JetBrains Mono',monospace; font-size:11px; fill:var(--rust); }
+  .bar{fill:var(--gold);}
+  .bar.peak{fill:var(--ink);}
+  .axis-line{stroke:var(--line);stroke-width:1;}
+  .median-line{stroke:var(--rust);stroke-width:1.5;stroke-dasharray:4 3;}
+  .count-label{font-size:12px;fill:var(--ink);}
+  .score-label{font-size:12px;fill:var(--ink-soft);}
+  .chart-legend{ font-size:13px; color:var(--ink-soft); max-width:230px; line-height:1.55; }
+  .chart-legend strong{color:var(--ink);font-weight:600;}
+
+  /* ---------- Controls (search / filter / sort) ---------- */
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .controls input[type="text"], .controls select{
+    font-family:'Inter',sans-serif; font-size:13px; color:var(--ink);
+    background:var(--cream); border:1px solid var(--line); padding:8px 12px;
+  }
+  .controls input[type="text"]{ flex:1 1 200px; min-width:160px; }
+  .controls select{ cursor:pointer; }
+  .controls input:focus, .controls select:focus{ outline:2px solid var(--rust); outline-offset:1px; }
+  .result-count{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); margin-bottom:14px; }
+
+  /* ---------- Topic cards ---------- */
+  .topic-card{ border:1px solid var(--line); background:var(--paper); margin-bottom:10px; cursor:pointer; }
+  .topic-card.status-review{border-left:3px solid var(--rust);}
+  .topic-card.status-developing{border-left:3px solid var(--gold);}
+  .topic-card.status-solid{border-left:3px solid var(--sage);}
+
+  .topic-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; }
+  .topic-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .topic-rank{ font-family:'Fraunces',serif; font-size:19px; color:var(--line); width:20px; flex-shrink:0; }
+  .topic-name{ font-family:'Fraunces',serif; font-weight:600; font-size:16px; }
+  .dim-tag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-soft); border:1px solid var(--line); padding:2px 7px; white-space:nowrap;
+  }
+  .miscon-flag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em;
+    color:var(--rust); white-space:nowrap;
+  }
+
+  .topic-meta{display:flex;align-items:center;gap:18px;flex-shrink:0;}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:flex-end;}
+  .gauge-score{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px; }
+  .gauge-score.review{color:var(--rust);}
+  .gauge-score.developing{color:var(--gold);}
+  .gauge-score.solid{color:var(--sage);}
+  .gauge{width:100px;height:14px;position:relative;margin-top:4px;}
+  .gauge-track{ position:absolute;top:6px;left:0;right:0;height:2px;background:var(--line); }
+  .gauge-dot{
+    position:absolute;top:2px;width:10px;height:10px;border-radius:50%;
+    transform:translateX(-50%); border:2px solid var(--paper); box-shadow:0 0 0 1px var(--ink);
+  }
+  .gauge-dot.review{background:var(--rust);}
+  .gauge-dot.developing{background:var(--gold);}
+  .gauge-dot.solid{background:var(--sage);}
+
+  .chev{ font-size:13px; color:var(--ink-soft); transition:transform 0.18s ease; flex-shrink:0; }
+  .topic-card.open .chev{transform:rotate(90deg);}
+
+  .topic-detail{ max-height:0; overflow:hidden; transition:max-height 0.22s ease; border-top:1px solid transparent; }
+  .topic-card.open .topic-detail{border-top:1px solid var(--line);}
+  .topic-detail-inner{padding:14px 18px 18px;}
+  .detail-block{margin-bottom:14px;}
+  .detail-block:last-child{margin-bottom:0;}
+  .detail-label{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;
+  }
+  .event-row{
+    display:flex; align-items:baseline; gap:10px; font-size:13px; padding:6px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .event-row:last-child{border-bottom:none;}
+  .event-id{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); width:70px; flex-shrink:0; }
+  .event-score{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; width:26px; flex-shrink:0; }
+  .event-speaker{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); width:78px; flex-shrink:0; }
+  .event-note{ color:var(--ink-soft); font-style:italic; }
+  .misconception{
+    font-size:13.5px; line-height:1.55; padding:10px 12px; background:var(--rust-bg);
+    border-left:2px solid var(--rust); margin-bottom:8px;
+  }
+  .misconception:last-child{margin-bottom:0;}
+  .misconception .evt-id{
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--rust);
+    display:block; margin-bottom:4px; letter-spacing:0.04em;
+  }
+  .no-misconceptions{
+    font-size:13.5px; color:var(--sage); background:var(--sage-bg); padding:10px 12px; border-left:2px solid var(--sage);
+  }
+  .speaker-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{ font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 9px; background:var(--cream); border:1px solid var(--line); }
+  .stat-line{display:flex;gap:20px;font-size:13px;color:var(--ink-soft);flex-wrap:wrap;}
+  .stat-line b{color:var(--ink);font-weight:600;}
+
+  .show-more-btn{
+    display:block; width:100%; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px;
+    letter-spacing:0.04em; color:var(--ink); background:var(--cream); border:1px dashed var(--line);
+    padding:11px; cursor:pointer; margin-top:4px;
+  }
+  .show-more-btn:hover{background:var(--gold-bg);border-color:var(--gold);}
+
+  .empty-state{ font-size:13px; color:var(--ink-soft); padding:20px; text-align:center; border:1px dashed var(--line); }
+
+  footer{
+    padding:22px 44px 30px; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    letter-spacing:0.04em; color:var(--ink-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+
+  a:focus-visible, .topic-card:focus-visible{ outline:2px solid var(--rust);outline-offset:2px; }
+
+  @media (max-width:640px){
+    body{padding:16px 10px;}
+    .masthead,section,footer{padding-left:20px;padding-right:20px;}
+    .vitals{grid-template-columns:repeat(2,1fr);}
+    .vital{border-bottom:1px solid var(--line);}
+    h1{font-size:26px;}
+    .topic-row{flex-wrap:wrap;}
+    .topic-meta{width:100%;justify-content:space-between;}
+    .chart-wrap{flex-direction:column;}
+  }
+
+/* ---------- Dashboard shell ---------- */
+.app{max-width:1080px;margin:0 auto 60px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 4px 18px;flex-wrap:wrap;}
+.brand{display:flex;align-items:baseline;gap:12px;}
+.brand .logo{font-family:'Fraunces',serif;font-weight:600;font-size:26px;letter-spacing:-0.01em;color:var(--ink);}
+.brand .tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);}
+.crumb{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);letter-spacing:0.04em;}
+.crumb a{color:var(--rust);cursor:pointer;text-decoration:none;}
+.crumb a:hover{text-decoration:underline;}
+
+.dash-head{background:var(--paper);border:1px solid var(--line);padding:28px 32px;box-shadow:0 1px 3px rgba(42,36,32,0.05),0 12px 32px -18px rgba(42,36,32,0.18);}
+.dash-head .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);margin:0 0 8px;}
+.dash-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:30px;line-height:1.08;margin:0 0 8px;}
+.dash-head p{font-size:14px;color:var(--ink-soft);margin:0;max-width:70ch;}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:22px;border:1px solid var(--line);}
+.kpi{padding:16px 18px;border-right:1px solid var(--line);}
+.kpi:last-child{border-right:none;}
+.kpi .num{font-family:'Fraunces',serif;font-weight:600;font-size:26px;line-height:1;}
+.kpi .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-soft);margin-top:6px;}
+
+.layout{display:grid;grid-template-columns:340px 1fr;gap:18px;margin-top:18px;align-items:start;}
+.card{background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 3px rgba(42,36,32,0.05),0 12px 32px -18px rgba(42,36,32,0.14);}
+.card-head{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.card-head h2{font-family:'Fraunces',serif;font-weight:600;font-size:17px;margin:0;}
+.card-head .meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);letter-spacing:0.05em;}
+
+/* classes list */
+.class-scroll{max-height:640px;overflow-y:auto;}
+.class-row{display:flex;align-items:center;gap:10px;padding:11px 20px;border-bottom:1px dotted var(--line);cursor:pointer;}
+.class-row:hover{background:var(--cream);}
+.class-row:focus-visible{outline:2px solid var(--rust);outline-offset:-2px;}
+.class-sid{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);width:34px;flex-shrink:0;}
+.class-body{flex:1;min-width:0;}
+.class-topic{font-family:'Inter',sans-serif;font-size:13px;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.class-sub{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);margin-top:2px;letter-spacing:0.03em;}
+.class-score{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;flex-shrink:0;}
+.class-chev{color:var(--ink-soft);font-size:11px;flex-shrink:0;}
+
+/* timeline */
+.timeline-wrap{padding:20px 24px 26px;}
+.tl-legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);}
+.tl-legend span{display:inline-flex;align-items:center;gap:5px;}
+.tl-swatch{width:9px;height:9px;display:inline-block;}
+.tl-blocks{display:flex;flex-direction:column;gap:9px;}
+.tl-block{display:grid;grid-template-columns:130px 1fr;align-items:center;gap:12px;}
+.tl-block-label{font-size:12px;}
+.tl-block-label b{font-family:'Fraunces',serif;font-weight:600;font-size:13px;display:block;}
+.tl-block-label span{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);}
+.tl-track{position:relative;height:34px;background:var(--cream);border:1px solid var(--line);}
+.tl-dot{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;transform:translate(-50%,-50%);border:1.5px solid var(--paper);cursor:pointer;}
+.tl-dot:hover{transform:translate(-50%,-50%) scale(1.5);z-index:3;}
+.tl-axis{display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);margin-top:8px;padding:0 2px;}
+
+.generate-bar{padding:20px 24px;border-top:1px solid var(--line);display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--cream);}
+.generate-bar .gb-text{flex:1;min-width:220px;}
+.generate-bar .gb-text b{font-family:'Fraunces',serif;font-size:15px;display:block;margin-bottom:3px;}
+.generate-bar .gb-text span{font-size:12px;color:var(--ink-soft);}
+.btn{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.04em;padding:13px 22px;cursor:pointer;border:1px solid var(--ink);background:var(--ink);color:var(--paper);text-transform:uppercase;white-space:nowrap;}
+.btn:hover{background:#000;}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+.btn.ghost{background:transparent;color:var(--ink);}
+.btn.ghost:hover{background:var(--gold-bg);border-color:var(--gold);}
+.btn:disabled{opacity:0.5;cursor:default;}
+
+/* crunch overlay */
+.crunch{display:none;position:fixed;inset:0;background:rgba(28,24,22,0.6);z-index:50;align-items:center;justify-content:center;padding:20px;}
+.crunch.active{display:flex;}
+.crunch-box{background:var(--paper);border:1px solid var(--line);width:100%;max-width:680px;box-shadow:0 20px 60px -20px rgba(0,0,0,0.5);}
+.crunch-head{padding:22px 26px 16px;border-bottom:2px solid var(--ink);}
+.crunch-head .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);margin:0 0 6px;}
+.crunch-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin:0;}
+.crunch-body{padding:22px 26px 26px;}
+.crunch-progress{height:8px;background:var(--cream);border:1px solid var(--line);margin-bottom:6px;position:relative;overflow:hidden;}
+.crunch-fill{height:100%;background:var(--rust);width:0%;transition:width 0.08s linear;}
+.crunch-count{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);margin-bottom:16px;display:flex;justify-content:space-between;}
+.crunch-feed{height:180px;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.7;color:var(--ink-soft);background:var(--cream);border:1px solid var(--line);padding:10px 14px;}
+.crunch-feed .fl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.crunch-feed .fl b{color:var(--ink);font-weight:600;}
+.crunch-feed .fl .ok{color:var(--sage);}
+.crunch-feed .fl .flag{color:var(--rust);}
+.crunch-steps{display:flex;gap:0;margin-top:16px;}
+.crunch-step{flex:1;padding:8px 10px;border:1px solid var(--line);border-right:none;background:var(--paper);font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);text-align:center;letter-spacing:0.04em;}
+.crunch-step:last-child{border-right:1px solid var(--line);}
+.crunch-step.done{background:var(--sage-bg);color:var(--sage);}
+.crunch-step.active{background:var(--gold-bg);color:var(--gold);}
+
+/* 8.3 report */
+.report83{background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 3px rgba(42,36,32,0.05),0 12px 32px -18px rgba(42,36,32,0.18);}
+.r83-mast{padding:32px 40px 24px;border-bottom:2px solid var(--ink);}
+.r83-mast .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);margin:0 0 8px;}
+.r83-mast h1{font-family:'Fraunces',serif;font-weight:600;font-size:30px;margin:0 0 6px;line-height:1.08;}
+.r83-mast .sub{font-size:14px;color:var(--ink-soft);margin:0;}
+.r83-mast .provenance{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);margin-top:14px;letter-spacing:0.03em;}
+.prompt-block{padding:30px 40px;border-bottom:1px solid var(--line);}
+.prompt-block:last-child{border-bottom:none;}
+.prompt-tag{display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em;color:var(--paper);background:var(--ink);padding:4px 10px;margin-bottom:6px;}
+.prompt-q{font-family:'Fraunces',serif;font-weight:600;font-size:18px;color:var(--ink);margin:0 0 4px;line-height:1.3;}
+.prompt-src{font-size:12px;color:var(--ink-soft);font-style:italic;margin:0 0 18px;max-width:70ch;line-height:1.5;}
+.answer{font-size:14.5px;line-height:1.72;color:var(--ink);}
+.answer p{margin:0 0 14px;}
+.answer p:last-child{margin-bottom:0;}
+.answer b{font-weight:600;}
+.answer .fig{color:var(--rust);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:13.5px;}
+.subhead{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--rust);margin:20px 0 10px;}
+.tablewrap{overflow-x:auto;margin:6px 0 4px;}
+table.d{width:100%;border-collapse:collapse;font-size:13px;}
+table.d th,table.d td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);}
+table.d th{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;}
+table.d td.num{font-family:'JetBrains Mono',monospace;text-align:right;}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;text-transform:uppercase;letter-spacing:0.03em;}
+.badge.ok{color:var(--sage);background:var(--sage-bg);}
+.badge.watch{color:var(--gold);background:var(--gold-bg);}
+.badge.flag{color:var(--rust);background:var(--rust-bg);}
+.callout{padding:14px 16px;border-left:2px solid var(--gold);background:var(--gold-bg);font-size:13.5px;line-height:1.6;margin:12px 0;}
+.callout.gap{border-left-color:var(--rust);background:var(--rust-bg);}
+.callout.redund{border-left-color:var(--gold);background:var(--gold-bg);}
+.pobar-row{display:flex;align-items:center;gap:12px;margin:7px 0;}
+.pobar-label{font-family:'JetBrains Mono',monospace;font-size:11px;width:170px;flex-shrink:0;color:var(--ink-soft);}
+.pobar{flex:1;height:16px;background:var(--cream);border:1px solid var(--line);position:relative;}
+.pobar-fill{height:100%;}
+.pobar-val{font-family:'JetBrains Mono',monospace;font-size:11px;width:44px;text-align:right;flex-shrink:0;}
+.hidden{display:none;}
+@media (max-width:820px){.layout{grid-template-columns:1fr;}.kpis{grid-template-columns:repeat(2,1fr);}.tl-block{grid-template-columns:100px 1fr;}}
+@media (max-width:640px){.dash-head,.r83-mast,.prompt-block{padding-left:20px;padding-right:20px;}}
+</style></head><body>
+<div class="app">
+  <div class="appbar">
+    <div class="brand"><span class="logo">CORE</span><span class="tag">Accreditation Console</span></div>
+    <div class="crumb" id="crumb"><span>Curriculum Dashboard</span></div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="view-dash">
+    <div class="dash-head">
+      <p class="eyebrow">Curriculum Intelligence · AY 2025–2026</p>
+      <h1>Every small group, one live curriculum record</h1>
+      <p>Each session below is a de-identified small-group analysis like the ones faculty already receive. CORE keeps a running record across the whole preclinical year — so when accreditation review comes, the evidence is already assembled. Open any session to see its full report, or generate the LCME Element 8.3 narrative from the entire body of sessions.</p>
+      <div class="kpis" id="kpis"></div>
+    </div>
+
+    <div class="layout">
+      <div class="card">
+        <div class="card-head"><h2>Session Reports</h2><span class="meta" id="class-meta"></span></div>
+        <div class="class-scroll" id="class-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Academic Year Timeline</h2><span class="meta">6 blocks · 40 weeks</span></div>
+        <div class="timeline-wrap">
+          <div class="tl-legend" id="tl-legend"></div>
+          <div class="tl-blocks" id="tl-blocks"></div>
+          <div class="tl-axis"><span>Week 1</span><span>Week 10</span><span>Week 20</span><span>Week 30</span><span>Week 40</span></div>
+        </div>
+        <div class="generate-bar">
+          <div class="gb-text"><b>LCME Element 8.3 — Curricular Content Monitoring</b><span>Aggregate all sessions into the b / c / e narrative for the Data Collection Instrument.</span></div>
+          <button class="btn" id="gen-btn">Generate 8.3 Report →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION REPORT DRILL-DOWN -->
+  <div id="view-session" class="hidden">
+    <button class="btn ghost" id="back-dash" style="margin-bottom:16px;">← Back to dashboard</button>
+    <div class="sheet">
+      <div class="masthead"><p class="eyebrow" id="sess-eyebrow">Small Group Case Review</p><h1 id="rep-title">Session</h1><p class="subtitle" id="sess-sub"></p></div>
+      <div class="vitals" id="vitals"></div>
+      <section id="assessment"><div class="section-head"><span class="section-tag">Assessment</span><h2>Understanding Score Distribution</h2></div><p class="section-note" id="assessment-note"></p><div class="chart-wrap"><svg id="chart-svg" width="560" height="230" viewBox="0 0 560 230" role="img"></svg><div class="chart-legend" id="chart-legend"></div></div></section>
+      <section id="differential"><div class="section-head"><span class="section-tag">Differential</span><h2>Areas for Review</h2></div><p class="section-note" id="differential-note"></p><div id="differential-list"></div></section>
+      <section id="problem-list"><div class="section-head"><span class="section-tag">Problem List</span><h2>Full Topic Summary</h2></div><p class="section-note">Every topic this session touched, matched against the taxonomy. Search, filter, or sort — click any topic for its events and misconceptions.</p><div class="controls"><input type="text" id="search-input" placeholder="Search topics…" autocomplete="off"><select id="dimension-filter"></select><select id="sort-select"><option value="score-asc">Score: lowest first</option><option value="score-desc">Score: highest first</option><option value="name-asc">Name: A → Z</option><option value="events-desc">Most discussed</option></select></div><div class="result-count" id="result-count"></div><div id="problem-list-items"></div></section>
+      <footer><span>Taxonomy Rollup &amp; Analysis Report</span><span id="footer-stats"></span></footer>
+    </div>
+  </div>
+
+  <!-- 8.3 REPORT VIEW -->
+  <div id="view-83" class="hidden">
+    <button class="btn ghost" id="back-dash-2" style="margin-bottom:16px;">← Back to dashboard</button>
+    <div class="report83" id="report83"></div>
+  </div>
+</div>
+
+<!-- CRUNCH OVERLAY -->
+<div class="crunch" id="crunch">
+  <div class="crunch-box">
+    <div class="crunch-head"><p class="eyebrow">Aggregating Curriculum</p><h3>Crunching session reports</h3></div>
+    <div class="crunch-body">
+      <div class="crunch-progress"><div class="crunch-fill" id="crunch-fill"></div></div>
+      <div class="crunch-count"><span id="crunch-label">Reading sessions…</span><span id="crunch-num">0 / 100</span></div>
+      <div class="crunch-feed" id="crunch-feed"></div>
+      <div class="crunch-steps" id="crunch-steps">
+        <div class="crunch-step" data-cs="0">Read sessions</div>
+        <div class="crunch-step" data-cs="1">Link to objectives</div>
+        <div class="crunch-step" data-cs="2">Detect gaps</div>
+        <div class="crunch-step" data-cs="3">Detect redundancy</div>
+        <div class="crunch-step" data-cs="4">Compose 8.3</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLE_TRANSCRIPT = "SPEAKER_00: Okay so our patient is a 34-year-old woman, postpartum about 18 months ago, presenting with fatigue, cold intolerance, and some weight gain. Where do we start?\nSPEAKER_01: I mean the obvious first move is a TSH. If it's a single elevated TSH that basically confirms hypothyroidism, right?\nSPEAKER_02: I'd be careful calling it on one lab draw though. You'd want to repeat it, and honestly check a free T4 before committing to a diagnosis.\nSPEAKER_01: Right, but the most common cause here is just primary hypothyroidism, so I'd anchor there.\nSPEAKER_03: The thing is, she's postpartum-ish. Couldn't this be postpartum thyroiditis? The amenorrhea for two months makes me think something reproductive is going on.\nSPEAKER_00: She delivered 18 months ago though, so that postpartum window is basically closed. The amenorrhea could just be from the hypothyroidism itself.\nSPEAKER_04: For Hashimoto specifically, the diagnosis really hinges on antibody titers \u2014 anti-TPO. If we don't order those we're just guessing at autoimmune etiology.\nSPEAKER_02: Agreed. Hashimoto is the classic autoimmune hypothyroidism, lymphocytic infiltration, and the anti-TPO antibodies are the confirmatory piece.\nSPEAKER_03: What about Graves for the hyperthyroid side? If she'd presented with heat intolerance and weight loss instead, Graves would be top of the differential \u2014 the TSH receptor antibodies.\nSPEAKER_01: And thyroid storm is the emergency version of that \u2014 the management is beta blockers, PTU, steroids. That's a can't-miss.\nSPEAKER_02: Thyroid storm management, yeah \u2014 propranolol, thionamides, iodine after the thionamide, glucocorticoids. The order matters.\nSPEAKER_04: Coming back to nodules \u2014 if she had a palpable thyroid nodule, the workup is ultrasound first, then FNA based on risk stratification. You don't biopsy everything.\nSPEAKER_03: For a thyroid nodule I feel like people jump straight to biopsy, but risk-stratified imaging before biopsy is the actual standard.\nSPEAKER_00: Let's talk cancers briefly. Papillary is the most common, best prognosis. Follicular spreads hematogenously.\nSPEAKER_02: Medullary is the one from parafollicular C cells, calcitonin \u2014 associated with MEN syndromes. Prognosis is intermediate.\nSPEAKER_01: Anaplastic is the aggressive one, terrible prognosis, elderly patients. I always mix up anaplastic and medullary though.\nSPEAKER_04: On the secondary side \u2014 secondary hypothyroidism is a pituitary problem, low TSH and low T4. That's central, versus primary where TSH is high.\nSPEAKER_03: Right, and secondary hyperthyroidism would be a TSH-secreting pituitary adenoma, which is rare but you'd see inappropriately normal or high TSH with high T4.\nSPEAKER_00: Euthyroid sick syndrome \u2014 in a hospitalized sick patient, low T3, we generally don't treat, it resolves with the underlying illness.\nSPEAKER_01: I thought euthyroid sick you had to replace the T3? No? I might be wrong there.\nSPEAKER_02: No, you don't treat it, that's the point \u2014 it's an adaptive response. Treating can be harmful.\nSPEAKER_04: Thyrotoxicosis versus hyperthyroidism \u2014 thyrotoxicosis is the clinical syndrome of excess hormone regardless of source, hyperthyroidism is specifically the gland overproducing.\nSPEAKER_03: Nonthyroidal illness syndrome is basically the same as euthyroid sick, right? Or am I conflating them?\nSPEAKER_00: They're the same entity, different names. Good catch on the potential confusion.\nSPEAKER_02: For infertility due to thyroid disease \u2014 untreated hypothyroidism causes anovulation and can absolutely present as infertility. Replace the thyroid, fertility often returns.\nSPEAKER_04: And goiter \u2014 could be iodine deficiency, Hashimoto, Graves. The presentation alone doesn't tell you function, you need the labs.\nSPEAKER_01: Thyroid cyst is usually benign, good prognosis, often just monitored.\nSPEAKER_03: One more \u2014 thyroiditis broadly, subacute/de Quervain is post-viral and painful, that's a pathophysiology point worth remembering.\nSPEAKER_00: Great discussion. So our patient \u2014 repeat TSH, free T4, anti-TPO antibodies, and we're leaning Hashimoto but ruling out the central causes.";
+
+// ============ CORE DETERMINISTIC ENGINE (no AI call) ============
+// Maps a small-group transcript to the exact REPORT_DATA schema.
+
+const TAXONOMY = [
+  ["hypothyroidism", "Hypothyroidism", "029"],
+  ["hashimoto", "Hashimoto thyroiditis", "034"],
+  ["graves", "Graves disease", "035"],
+  ["thyroid storm", "Thyroid storm", "032"],
+  ["thyrotoxicosis", "Thyrotoxicosis", "031"],
+  ["thyroid nodule", "Thyroid nodule", "025"],
+  ["thyroid cyst", "Thyroid cyst", "024"],
+  ["goiter", "Goiter", "028"],
+  ["hyperthyroidism", "Hyperthyroidism", "030"],
+  ["papillary", "Papillary thyroid cancer", "036"],
+  ["follicular", "Follicular thyroid cancer", "037"],
+  ["medullary", "Medullary thyroid cancer", "038"],
+  ["anaplastic", "Anaplastic thyroid cancer", "039"],
+  ["euthyroid sick", "Euthyroid sick syndrome", "027"],
+  ["nonthyroidal illness", "Nonthyroidal illness syndrome", "026"],
+  ["thyroiditis", "Thyroiditis", "033"],
+  ["secondary hypothyroidism", "Secondary hypothyroidism", "042"],
+  ["secondary hyperthyroidism", "Secondary hyperthyroidism", "043"],
+  ["pituitary", "Thyroid deficiency from pituitary disorder", "040"],
+  ["infertility", "Infertility due to thyroid disease", "041"],
+];
+// dimension cue words
+const DIM_CUES = [
+  ["management", ["manage","treat","replace","beta blocker","ptu","propranolol","steroid","monitor","therapy","dose","levothyroxine","thionamide"]],
+  ["diagnosis", ["diagnos","tsh","free t4","antibod","anti-tpo","titer","fna","biopsy","ultrasound","lab","confirm","workup","imaging"]],
+  ["pathophysiology", ["c cell","calcitonin","autoimmune","lymphocytic","receptor","mechanism","post-viral","adaptive","infiltrat","hematogenous"]],
+  ["prognosis", ["prognosis","survival","benign","aggressive","outcome","best","terrible","intermediate"]],
+  ["presentation", ["present","symptom","fatigue","cold intoler","heat intoler","weight","amenorrhea","palpable","anovulation","clinical"]],
+];
+
+// deterministic pseudo-random from a string (mulberry-ish)
+function seedFrom(str){ let h=1779033703^str.length; for(let i=0;i<str.length;i++){ h=Math.imul(h^str.charCodeAt(i),3432918353); h=h<<13|h>>>19; } return function(){ h=Math.imul(h^h>>>16,2246822507); h=Math.imul(h^h>>>13,3266489909); return ((h^=h>>>16)>>>0)/4294967296; }; }
+
+function detectDimension(text){
+  const t = text.toLowerCase();
+  let best="presentation", bestN=0;
+  for(const [dim,cues] of DIM_CUES){
+    let n=0; for(const c of cues){ if(t.includes(c)) n++; }
+    if(n>bestN){ bestN=n; best=dim; }
+  }
+  return best;
+}
+const DIM_CODE = {presentation:"1", pathophysiology:"2", diagnosis:"3", management:"4", prognosis:"5"};
+
+// misconception cue phrases -> generates a faculty-style misconception note
+const MISCON_TRIGGERS = [
+  ["single lab", "leaned on a single lab draw without repeat testing rather than confirming with a repeat TSH and free T4"],
+  ["one lab", "leaned on a single lab draw without repeat testing rather than confirming with a repeat TSH and free T4"],
+  ["most common cause", "anchored on the most common cause without ruling out secondary or central etiologies"],
+  ["anchor", "anchored on the most common cause without ruling out secondary or central etiologies"],
+  ["jump straight to biopsy", "skipped risk-stratified imaging before biopsy, moving to FNA prematurely"],
+  ["replace the t3", "believed euthyroid sick syndrome should be treated with hormone replacement, when it is an adaptive response left untreated"],
+  ["mix up", "briefly conflated two related conditions, overlooking the distinguishing feature until prompted"],
+  ["conflating", "briefly conflated two related conditions, overlooking the distinguishing feature until prompted"],
+  ["might be wrong", "expressed uncertainty about the correct approach, defaulting to an incomplete rule of thumb"],
+];
+
+function analyzeTranscript(raw){
+  // parse into turns
+  const lines = raw.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const turns = [];
+  for(const line of lines){
+    const m = line.match(/^(SPEAKER_\d+)\s*:\s*(.*)$/i);
+    if(m) turns.push({speaker:m[1].toUpperCase(), text:m[2]});
+  }
+  if(turns.length===0) return null;
+
+  // build events: for each turn, find every taxonomy topic mentioned
+  const topicMap = {}; // composite_id -> topic aggregate
+  let evtCounter = 0;
+  const speakersSeen = new Set();
+
+  // sort taxonomy by length desc so multi-word matches win
+  const taxo = TAXONOMY.slice().sort((a,b)=>b[0].length-a[0].length);
+
+  for(const turn of turns){
+    speakersSeen.add(turn.speaker);
+    const low = turn.text.toLowerCase();
+    const matched = [];
+    const usedSpans = [];
+    for(const [kw,disp,code] of taxo){
+      const idx = low.indexOf(kw);
+      if(idx>=0){
+        // avoid double-count overlap (e.g. 'thyroiditis' inside 'hashimoto thyroiditis' turn) - allow both distinct topics though
+        matched.push([kw,disp,code]);
+      }
+    }
+    // de-duplicate by display name, keep first
+    const seen=new Set();
+    for(const [kw,disp,code] of matched){
+      if(seen.has(disp)) continue; seen.add(disp);
+      const dim = detectDimension(turn.text);
+      const composite = `150-${code}-${DIM_CODE[dim]}`;
+      evtCounter++;
+      const eid = "evt_"+String(evtCounter).padStart(4,"0");
+      // deterministic score from event id + text
+      const rnd = seedFrom(eid+disp+turn.speaker);
+      let score = 1+Math.floor(rnd()*5); // 1..5
+      // nudge: turns expressing uncertainty score lower
+      if(/might be wrong|not sure|uncertain|i thought|jump straight|mix up|conflat/i.test(turn.text)) score = Math.max(1, score-2);
+      if(/confirm|standard|the point is|correct|actually/i.test(turn.text)) score = Math.min(5, score+1);
+
+      // misconception?
+      let misconception = null;
+      for(const [trig, note] of MISCON_TRIGGERS){
+        if(low.includes(trig)){ misconception = `${turn.speaker.replace('SPEAKER_','Speaker_')} ${note}.`; break; }
+      }
+      if(score<=2 && !misconception && rnd()<0.5){
+        misconception = `The group's handling of ${disp} (${dim}) left a gap — reasoning stopped short of confirming the underlying cause.`;
+      }
+      if(!topicMap[composite]){
+        topicMap[composite] = {topic:disp.toLowerCase().replace(/ /g,"_"), topic_display:disp, dimension:dim, composite_id:composite, speakers:new Set(), events:[]};
+      }
+      topicMap[composite].speakers.add(turn.speaker);
+      topicMap[composite].events.push({event_id:eid, topic:topicMap[composite].topic, composite_id:composite, dimension:dim, score, speaker:turn.speaker, misconception});
+    }
+  }
+
+  // finalize
+  const topics = Object.values(topicMap).map(t=>{
+    const scores = t.events.map(e=>e.score);
+    const avg = scores.reduce((a,b)=>a+b,0)/scores.length;
+    return {
+      topic:t.topic, topic_display:t.topic_display, dimension:t.dimension, composite_id:t.composite_id,
+      speakers:[...t.speakers].sort(),
+      events:t.events,
+      avg_score: Math.round(avg*100)/100,
+      distinct_events: t.events.length,
+      misconception_count: t.events.filter(e=>e.misconception).length,
+    };
+  });
+
+  const allEvents = topics.flatMap(t=>t.events);
+  const dist = {1:0,2:0,3:0,4:0,5:0};
+  allEvents.forEach(e=>dist[e.score]++);
+
+  return {
+    total_events: allEvents.length,
+    total_topics: topics.length,
+    total_misconceptions: allEvents.filter(e=>e.misconception).length,
+    score_distribution: dist,
+    topics,
+    _speakers:[...speakersSeen].sort(),
+  };
+}
+// ============ REPORT RENDERER ============ (from CORE output) ============
+let REPORT_DATA = null;
+function statusOf(s){ if(s<2.5) return 'review'; if(s<3.75) return 'developing'; return 'solid'; }
+function humanDim(n){ return n.charAt(0).toUpperCase()+n.slice(1); }
+function gaugePct(s){ return Math.max(0,Math.min(100,((s-1)/4)*100)); }
+function computeMedian(dist){ let a=[]; Object.keys(dist).forEach(k=>{for(let i=0;i<dist[k];i++)a.push(parseInt(k));}); a.sort((x,y)=>x-y); const n=a.length; if(n===0) return 0; return n%2===0?(a[n/2-1]+a[n/2])/2:a[(n-1)/2]; }
+
+function renderReport(){
+  const R=REPORT_DATA;
+  // vitals
+  const median=computeMedian(R.score_distribution);
+  const reviewCount=R.topics.filter(t=>statusOf(t.avg_score)==='review').length;
+  document.getElementById('vitals').innerHTML=[
+    [R.total_events,'Discussion Events'],[R.total_topics,'Topics Identified'],
+    [R.total_misconceptions,'Misconceptions Flagged','var(--rust)'],[median,'Median Score / 5'],
+    [reviewCount,'Topics Needing Review','var(--rust)'],
+  ].map(([n,l,c])=>`<div class="vital"><div class="num" ${c?`style="color:${c};"`:''}>${n}</div><div class="label">${l}</div></div>`).join('');
+  document.getElementById('footer-stats').textContent=`${R.total_events} events · ${R.total_topics} topics · ${R.total_misconceptions} misconceptions`;
+  renderChart(); renderDifferential(); populateDimensionFilter(); renderProblemList();
+}
+function renderChart(){
+  const dist=REPORT_DATA.score_distribution, scores=[1,2,3,4,5], counts=scores.map(s=>dist[s]||0);
+  const maxCount=Math.max(...counts,1), gridMax=Math.ceil(maxCount/10)*10||10, median=computeMedian(dist);
+  const cl=50,cr=540,ct=20,cb=190,cw=cr-cl,slot=cw/5,bw=slot*0.56; let svg='';
+  svg+=`<line class="axis-line" x1="${cl}" y1="${ct}" x2="${cl}" y2="${cb}"/><line class="axis-line" x1="${cl}" y1="${cb}" x2="${cr}" y2="${cb}"/>`;
+  [0,gridMax/2,gridMax].forEach(v=>{const y=cb-(v/gridMax)*(cb-ct);svg+=`<text class="score-label" x="${cl-14}" y="${y+4}" text-anchor="end">${v}</text>`;if(v>0)svg+=`<line class="axis-line" x1="${cl}" y1="${y}" x2="${cr}" y2="${y}" stroke-dasharray="2 4"/>`;});
+  const mx=cl+slot*(median-1)+slot/2; svg+=`<line class="median-line" x1="${mx}" y1="10" x2="${mx}" y2="${cb+10}"/><text class="median-label" x="${mx+6}" y="20">median = ${median}</text>`;
+  scores.forEach((s,i)=>{const cx=cl+slot*i+slot/2,x=cx-bw/2,h=gridMax?(counts[i]/gridMax)*(cb-ct):0,y=cb-h,peak=counts[i]===maxCount;svg+=`<rect class="bar${peak?' peak':''}" x="${x}" y="${y}" width="${bw}" height="${h}"/>`;if(counts[i]>0)svg+=`<text class="count-label" x="${cx}" y="${y-8}" text-anchor="middle">${counts[i]}</text>`;svg+=`<text class="score-label" x="${cx}" y="${cb+18}" text-anchor="middle">${s}</text>`;});
+  svg+=`<text class="score-label" x="${cl+cw/2}" y="${cb+34}" text-anchor="middle" style="fill:var(--ink-soft);">Understanding score</text>`;
+  document.getElementById('chart-svg').innerHTML=svg;
+  const low=(dist[1]||0)+(dist[2]||0),high=(dist[4]||0)+(dist[5]||0);
+  document.getElementById('assessment-note').textContent=`How the group's understanding scores spread across all ${REPORT_DATA.total_events} discussion events, scored 1 (no grasp) to 5 (fully sound).`;
+  document.getElementById('chart-legend').innerHTML=`<p><strong>Reading this:</strong> ${low} events landed at a 1 or 2, against ${high} at a 4 or 5.</p><p>Median score is <strong>${median}</strong>. The spread suggests understanding varied by topic, not just by speaker.</p>`;
+}
+function topicCardHTML(topic,rank){
+  const status=statusOf(topic.avg_score),mc=topic.misconception_count;
+  const events=topic.events.slice().sort((a,b)=>a.event_id.localeCompare(b.event_id));
+  const misc=events.filter(e=>e.misconception);
+  const eventsHTML=events.map(e=>`<div class="event-row"><span class="event-id">${e.event_id}</span><span class="event-score" style="color:var(--${statusOf(e.score)==='review'?'rust':statusOf(e.score)==='developing'?'gold':'sage'});">${e.score}/5</span><span class="event-speaker">${e.speaker}</span><span class="event-note">${e.misconception?'Misconception flagged — see below':''}</span></div>`).join('');
+  const miscHTML=misc.length?misc.map(e=>`<div class="misconception"><span class="evt-id">${e.event_id} · ${e.speaker}</span>${e.misconception}</div>`).join(''):`<div class="no-misconceptions">None recorded — the group reasoned through this cleanly.</div>`;
+  return `<div class="topic-card status-${status}" tabindex="0" data-topic="${topic.topic}"><div class="topic-row"><div class="topic-main">${rank!=null?`<span class="topic-rank">${rank}</span>`:''}<span class="topic-name">${topic.topic_display}</span><span class="dim-tag">${topic.dimension}</span>${mc>0?`<span class="miscon-flag">⚑ ${mc} misconception${mc>1?'s':''}</span>`:''}</div><div class="topic-meta"><div class="gauge-wrap"><span class="gauge-score ${status}">${topic.avg_score.toFixed(2)} / 5</span><div class="gauge"><div class="gauge-track"></div><div class="gauge-dot ${status}" style="left:${gaugePct(topic.avg_score)}%;"></div></div></div><span class="chev">▶</span></div></div><div class="topic-detail"><div class="topic-detail-inner"><div class="stat-line"><span><b>${topic.composite_id}</b> · composite ID</span><span><b>${topic.distinct_events}</b> distinct events</span><span><b>${topic.speakers.length}</b> speakers</span></div><div class="detail-block" style="margin-top:14px;"><div class="detail-label">Events in this topic</div>${eventsHTML}</div><div class="detail-block"><div class="detail-label">Misconceptions recorded (${mc})</div>${miscHTML}</div><div class="detail-block"><div class="detail-label">Speakers involved</div><div class="speaker-chips">${topic.speakers.map(s=>`<span class="chip">${s}</span>`).join('')}</div></div></div></div></div>`;
+}
+function wireCard(c){c.addEventListener('click',()=>toggleCard(c));c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCard(c);}});}
+function toggleCard(c){const d=c.querySelector('.topic-detail');if(c.classList.contains('open')){d.style.maxHeight=null;c.classList.remove('open');}else{c.classList.add('open');d.style.maxHeight=d.scrollHeight+'px';}}
+let differentialRevealed=8;
+function renderDifferential(){
+  const nr=REPORT_DATA.topics.filter(t=>statusOf(t.avg_score)==='review').sort((a,b)=>a.avg_score-b.avg_score);
+  document.getElementById('differential-note').textContent=nr.length?`${nr.length} of ${REPORT_DATA.total_topics} topics averaged below a 2.5 — the group's weakest spots this session, ranked lowest first.`:`No topic averaged below a 2.5 this session — nothing urgent to flag.`;
+  const shown=nr.slice(0,differentialRevealed),c=document.getElementById('differential-list');
+  if(nr.length===0){c.innerHTML=`<div class="empty-state">Every topic cleared the review threshold this session.</div>`;return;}
+  c.innerHTML=shown.map((t,i)=>topicCardHTML(t,i+1)).join('')+(nr.length>differentialRevealed?`<button class="show-more-btn" id="differential-more">Show ${Math.min(5,nr.length-differentialRevealed)} more (${nr.length-differentialRevealed} remaining)</button>`:'');
+  c.querySelectorAll('.topic-card').forEach(wireCard);
+  const mb=document.getElementById('differential-more');if(mb)mb.addEventListener('click',()=>{differentialRevealed+=5;renderDifferential();});
+}
+function populateDimensionFilter(){const sel=document.getElementById('dimension-filter');const dims=[...new Set(REPORT_DATA.topics.map(t=>t.dimension))].sort();sel.innerHTML=`<option value="all">All dimensions</option>`+dims.map(d=>`<option value="${d}">${humanDim(d)}</option>`).join('');}
+function renderProblemList(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase(),df=document.getElementById('dimension-filter').value,sm=document.getElementById('sort-select').value;
+  let list=REPORT_DATA.topics.filter(t=>t.topic_display.toLowerCase().includes(q)&&(df==='all'||t.dimension===df));
+  list.sort((a,b)=>{if(sm==='score-asc')return a.avg_score-b.avg_score;if(sm==='score-desc')return b.avg_score-a.avg_score;if(sm==='name-asc')return a.topic_display.localeCompare(b.topic_display);if(sm==='events-desc')return b.distinct_events-a.distinct_events;return 0;});
+  document.getElementById('result-count').textContent=`Showing ${list.length} of ${REPORT_DATA.total_topics} topics`;
+  const c=document.getElementById('problem-list-items');c.innerHTML=list.length?list.map(t=>topicCardHTML(t,null)).join(''):`<div class="empty-state">No topics match that search.</div>`;
+  c.querySelectorAll('.topic-card').forEach(wireCard);
+}
+
+// ============ CURRICULUM DATA MODEL (100 synthetic sessions) ============
+// Each session = one small-group like the faculty report. Plotted across an academic year.
+// Story baked in: Management is weak system-wide; a redundancy exists (two courses both
+// heavily cover thyroid/adrenal); a gap exists (a program objective under-covered).
+
+const COURSES = [
+  {id:"FND", name:"Foundations of Medicine", block:"Block 1", weeks:[1,6], color:"var(--sage)"},
+  {id:"CMI", name:"Cardiovascular & Pulmonary", block:"Block 2", weeks:[7,13], color:"var(--gold)"},
+  {id:"RGI", name:"Renal & GI", block:"Block 3", weeks:[14,20], color:"var(--sage)"},
+  {id:"ENDO", name:"Endocrine & Reproductive", block:"Block 4", weeks:[21,27], color:"var(--rust)"},
+  {id:"HEME", name:"Hematology & Oncology", block:"Block 5", weeks:[28,33], color:"var(--gold)"},
+  {id:"NEURO", name:"Neuroscience & Behavior", block:"Block 6", weeks:[34,40], color:"var(--sage)"},
+];
+
+// Program (education) objectives — content gets linked to these; used for gap/redundancy (point e)
+const PROGRAM_OBJECTIVES = [
+  {code:"PO-1", label:"Mechanisms of health & disease"},
+  {code:"PO-2", label:"Diagnostic reasoning"},
+  {code:"PO-3", label:"Therapeutic management"},
+  {code:"PO-4", label:"Prognosis & natural history"},
+];
+const DIMS=["presentation","pathophysiology","diagnosis","management","prognosis"];
+const DIM_TO_PO={presentation:"PO-1",pathophysiology:"PO-1",diagnosis:"PO-2",management:"PO-3",prognosis:"PO-4"};
+
+const SAMPLE_TOPICS = {
+  ENDO:["Hypothyroidism","Hashimoto thyroiditis","Graves disease","Thyroid storm","Thyroid nodule","Cushing syndrome","Adrenal insufficiency","Diabetes mellitus","Pheochromocytoma","Hyperparathyroidism"],
+  FND:["Cell injury","Inflammation","Neoplasia basics","Immune response","Genetics","Pharmacokinetics","Diabetes mellitus"],
+  CMI:["Heart failure","Ischemic heart disease","Arrhythmia","Valvular disease","COPD","Asthma","Pneumonia","Pulmonary embolism"],
+  RGI:["Acute kidney injury","Glomerular disease","Acid-base","Cirrhosis","Peptic ulcer","IBD","Pancreatitis","Diabetes mellitus"],
+  HEME:["Anemia","Leukemia","Lymphoma","Coagulopathy","Transfusion medicine"],
+  NEURO:["Stroke","Seizure","Neuropathy","Dementia","Multiple sclerosis","Headache"],
+};
+
+function mkRand(seed){let h=seed>>>0;return()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296;};}
+
+function buildSessions(n){
+  const rand=mkRand(20260731);
+  const sessions=[];
+  for(let i=0;i<n;i++){
+    // distribute sessions across courses, weighted so ENDO (our story course) has a few
+    const course=COURSES[Math.floor(rand()*COURSES.length)];
+    const week = course.weeks[0] + Math.floor(rand()*(course.weeks[1]-course.weeks[0]+1));
+    const group = 1+Math.floor(rand()*8);
+    const pool = SAMPLE_TOPICS[course.id]||SAMPLE_TOPICS.FND;
+    const nTopics=6+Math.floor(rand()*8);
+    const topics=[];
+    for(let t=0;t<nTopics;t++){
+      const name=pool[Math.floor(rand()*pool.length)];
+      const dim=DIMS[Math.floor(rand()*DIMS.length)];
+      let base=3.35+(rand()-0.5)*1.5;
+      if(dim==="management")base-=0.55;            // system-wide management weakness (point e gap)
+      if(group===3||group===6)base-=0.5;
+      const avg=Math.max(1,Math.min(5,base));
+      topics.push({name,dim,avg:Math.round(avg*100)/100,po:DIM_TO_PO[dim]});
+    }
+    const sessAvg=topics.reduce((a,b)=>a+b.avg,0)/topics.length;
+    const misc=topics.filter(t=>t.avg<2.5).length;
+    sessions.push({
+      idx:i+1, sid:"S"+String(i+1).padStart(3,"0"),
+      courseId:course.id, course:course.name, block:course.block, color:course.color,
+      week, group, topics, avg:Math.round(sessAvg*100)/100, misc, nTopics
+    });
+  }
+  return sessions.sort((a,b)=>a.week-b.week || a.idx-b.idx);
+}
+
+// ---- Aggregation into the b / c / e narrative ----
+function aggregate(sessions){
+  const byCourse={}, byDim={}, byPO={}, byWeek={};
+  DIMS.forEach(d=>byDim[d]={sum:0,n:0});
+  PROGRAM_OBJECTIVES.forEach(po=>byPO[po.code]={sum:0,n:0,topics:0});
+  let totalEvents=0, totalMisc=0;
+  // topic frequency for redundancy detection (topic seen across many sessions/courses)
+  const topicFreq={};
+  sessions.forEach(s=>{
+    byCourse[s.courseId]=byCourse[s.courseId]||{name:s.course,block:s.block,n:0,sum:0,misc:0,color:s.color,weeks:new Set()};
+    const c=byCourse[s.courseId]; c.n++; c.sum+=s.avg; c.misc+=s.misc; c.weeks.add(s.week);
+    byWeek[s.week]=byWeek[s.week]||{n:0,sum:0}; byWeek[s.week].n++; byWeek[s.week].sum+=s.avg;
+    s.topics.forEach(t=>{
+      byDim[t.dim].sum+=t.avg; byDim[t.dim].n++;
+      byPO[t.po].sum+=t.avg; byPO[t.po].n++; byPO[t.po].topics++;
+      totalEvents++; if(t.avg<2.5)totalMisc++;
+      const key=t.name; topicFreq[key]=topicFreq[key]||{count:0,courses:new Set(),sum:0};
+      topicFreq[key].count++; topicFreq[key].courses.add(s.courseId); topicFreq[key].sum+=t.avg;
+    });
+  });
+  return {byCourse,byDim,byPO,byWeek,totalEvents,totalMisc,topicFreq,nSessions:sessions.length};
+}
+
+// ============ DASHBOARD CONTROLLER ============
+const SESSIONS = buildSessions(100);
+let AGG = null;
+
+function fmt(x){return x.toFixed(2);}
+function colorFor(s){return s<2.5?'var(--rust)':s<3.75?'var(--gold)':'var(--sage)';}
+function pct(s){return Math.max(0,Math.min(100,((s-1)/4)*100));}
+function badge(s){return s<2.5?'<span class="badge flag">Gap flagged</span>':s<3.75?'<span class="badge watch">Monitoring</span>':'<span class="badge ok">Met</span>';}
+
+function renderDash(){
+  AGG = aggregate(SESSIONS);
+  const overall = AGG.totalEvents ? Object.values(AGG.byDim).reduce((s,d)=>s+d.sum,0)/Object.values(AGG.byDim).reduce((s,d)=>s+d.n,0) : 0;
+  const reviewSessions = SESSIONS.filter(s=>s.avg<2.75).length;
+  document.getElementById('kpis').innerHTML = [
+    [SESSIONS.length,'Sessions analyzed'],
+    [AGG.totalEvents.toLocaleString(),'Learning events'],
+    [Object.keys(AGG.byCourse).length+' courses','Across 6 blocks'],
+    [reviewSessions,'Sessions flagged','var(--rust)'],
+  ].map(([n,l,c])=>`<div class="kpi"><div class="num" ${c?`style="color:${c};"`:''}>${n}</div><div class="lbl">${l}</div></div>`).join('');
+
+  // classes list
+  document.getElementById('class-meta').textContent = SESSIONS.length + ' sessions';
+  document.getElementById('class-list').innerHTML = SESSIONS.map(s=>{
+    const topTopic = s.topics.slice().sort((a,b)=>a.avg-b.avg)[0];
+    return `<div class="class-row" tabindex="0" data-sid="${s.sid}">
+      <span class="class-sid">${s.sid}</span>
+      <span class="class-body"><span class="class-topic">${s.course}</span>
+      <span class="class-sub">${s.block} · wk ${s.week} · group ${s.group} · ${s.nTopics} topics · ${s.misc} flagged</span></span>
+      <span class="class-score" style="color:${colorFor(s.avg)};">${fmt(s.avg)}</span>
+      <span class="class-chev">▶</span></div>`;
+  }).join('');
+  document.querySelectorAll('.class-row').forEach(r=>{
+    r.addEventListener('click',()=>openSession(r.dataset.sid));
+    r.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openSession(r.dataset.sid);}});
+  });
+
+  // timeline legend
+  document.getElementById('tl-legend').innerHTML = COURSES.map(c=>`<span><span class="tl-swatch" style="background:${c.color};"></span>${c.id}</span>`).join('');
+  // timeline blocks
+  document.getElementById('tl-blocks').innerHTML = COURSES.map(c=>{
+    const sess = SESSIONS.filter(s=>s.courseId===c.id);
+    const dots = sess.map(s=>{
+      const leftPct = ((s.week-1)/39)*100;
+      return `<span class="tl-dot" style="left:${leftPct}%;background:${colorFor(s.avg)};" title="${s.sid} · ${s.course} · wk ${s.week} · ${fmt(s.avg)}" data-sid="${s.sid}"></span>`;
+    }).join('');
+    return `<div class="tl-block"><div class="tl-block-label"><b>${c.id}</b><span>${c.name}</span></div><div class="tl-track">${dots}</div></div>`;
+  }).join('');
+  document.querySelectorAll('.tl-dot').forEach(d=>d.addEventListener('click',()=>openSession(d.dataset.sid)));
+}
+
+// ---- session drill-down: synthesize a full report for that session ----
+function openSession(sid){
+  const s = SESSIONS.find(x=>x.sid===sid);
+  if(!s) return;
+  // build REPORT_DATA-shaped object from the session's topics
+  const topics = s.topics.map((t,i)=>{
+    const dim=t.dim, disp=t.name;
+    const nEvents = 1+Math.floor((Math.abs(hashStr(sid+disp+i))%3));
+    const events=[]; 
+    for(let k=0;k<nEvents;k++){
+      const jitter=(hashStr(sid+disp+i+k)%100)/100 - 0.5;
+      let sc=Math.max(1,Math.min(5,Math.round(t.avg+jitter)));
+      const speaker='SPEAKER_0'+(k%5);
+      let misc=null;
+      if(sc<=2 && k===0) misc = `The group's handling of ${disp} (${dim}) left a gap — reasoning stopped short of confirming the underlying mechanism.`;
+      events.push({event_id:'evt_'+String(i*10+k+1).padStart(4,'0'),topic:disp.toLowerCase().replace(/ /g,'_'),composite_id:'—',dimension:dim,score:sc,speaker,misconception:misc});
+    }
+    const avg=events.reduce((a,b)=>a+b.score,0)/events.length;
+    return {topic:disp.toLowerCase().replace(/ /g,'_'),topic_display:disp,dimension:dim,composite_id:'—',speakers:[...new Set(events.map(e=>e.speaker))].sort(),events,avg_score:Math.round(avg*100)/100,distinct_events:events.length,misconception_count:events.filter(e=>e.misconception).length};
+  });
+  const allEvents=topics.flatMap(t=>t.events);
+  const dist={1:0,2:0,3:0,4:0,5:0}; allEvents.forEach(e=>dist[e.score]++);
+  REPORT_DATA={total_events:allEvents.length,total_topics:topics.length,total_misconceptions:allEvents.filter(e=>e.misconception).length,score_distribution:dist,topics};
+  document.getElementById('rep-title').textContent = s.course + ' — ' + (s.topics[0]?s.topics[0].name:'Session');
+  document.getElementById('sess-sub').textContent = `${s.sid} · ${s.block}, week ${s.week} · small group ${s.group}. How this group reasoned through the session — where understanding held, and where it needs a second pass.`;
+  renderReport();
+  show('view-session');
+  document.getElementById('search-input').value='';
+  setCrumb([['Curriculum Dashboard','dash'],[s.sid,null]]);
+}
+function hashStr(str){let h=0;for(let i=0;i<str.length;i++){h=(Math.imul(31,h)+str.charCodeAt(i))|0;}return h;}
+
+// report list interactions
+document.getElementById('search-input').addEventListener('input',()=>{if(REPORT_DATA)renderProblemList();});
+document.getElementById('dimension-filter').addEventListener('change',()=>{if(REPORT_DATA)renderProblemList();});
+document.getElementById('sort-select').addEventListener('change',()=>{if(REPORT_DATA)renderProblemList();});
+
+// ---- view switching ----
+function show(id){['view-dash','view-session','view-83'].forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));window.scrollTo({top:0,behavior:'smooth'});}
+function setCrumb(parts){document.getElementById('crumb').innerHTML=parts.map((p,i)=>p[1]?`<a data-go="${p[1]}">${p[0]}</a>`:`<span>${p[0]}</span>`).join(' <span style="color:var(--line)">/</span> ');document.querySelectorAll('#crumb a').forEach(a=>a.addEventListener('click',()=>{if(a.dataset.go==='dash'){show('view-dash');setCrumb([['Curriculum Dashboard',null]]);}}));}
+document.getElementById('back-dash').addEventListener('click',()=>{show('view-dash');setCrumb([['Curriculum Dashboard',null]]);});
+document.getElementById('back-dash-2').addEventListener('click',()=>{show('view-dash');setCrumb([['Curriculum Dashboard',null]]);});
+
+// ============ CRUNCH ANIMATION + 8.3 GENERATION ============
+document.getElementById('gen-btn').addEventListener('click',runCrunch);
+function runCrunch(){
+  const overlay=document.getElementById('crunch'); overlay.classList.add('active');
+  const fill=document.getElementById('crunch-fill'), numEl=document.getElementById('crunch-num'),
+        feed=document.getElementById('crunch-feed'), label=document.getElementById('crunch-label'),
+        steps=[...document.querySelectorAll('.crunch-step')];
+  steps.forEach(s=>s.classList.remove('done','active'));
+  let i=0; const N=SESSIONS.length; feed.innerHTML='';
+  const stepLabels=['Reading sessions…','Linking content to program objectives…','Detecting coverage gaps…','Detecting redundancies…','Composing Element 8.3…'];
+  steps[0].classList.add('active'); label.textContent=stepLabels[0];
+  const iv=setInterval(()=>{
+    // process a few sessions per tick
+    for(let b=0;b<2 && i<N;b++){
+      const s=SESSIONS[i]; i++;
+      const weak=s.topics.slice().sort((a,b)=>a.avg-b.avg)[0];
+      const tag = s.avg<2.5?'<span class="flag">⚑ gap</span>':s.avg<3.75?'<span>· ok</span>':'<span class="ok">✓ solid</span>';
+      const line=document.createElement('div'); line.className='fl';
+      line.innerHTML=`<b>${s.sid}</b> ${s.courseId} wk${s.week} g${s.group} · ${s.nTopics} topics · mean ${fmt(s.avg)} ${tag}`;
+      feed.insertBefore(line,feed.firstChild);
+      while(feed.childNodes.length>11) feed.removeChild(feed.lastChild);
+    }
+    const prog=i/N; fill.style.width=(prog*100).toFixed(0)+'%'; numEl.textContent=`${i} / ${N}`;
+    // advance step markers across the run
+    const stepIdx=Math.min(4,Math.floor(prog*5));
+    steps.forEach((st,si)=>{st.classList.toggle('done',si<stepIdx);st.classList.toggle('active',si===stepIdx);});
+    label.textContent=stepLabels[stepIdx];
+    if(i>=N){
+      clearInterval(iv);
+      steps.forEach(st=>{st.classList.remove('active');st.classList.add('done');});
+      fill.style.width='100%';
+      setTimeout(()=>{ overlay.classList.remove('active'); build83(); show('view-83'); setCrumb([['Curriculum Dashboard','dash'],['LCME Element 8.3',null]]); },520);
+    }
+  },95);
+}
+
+// ---- compose the b / c / e narrative from the aggregate ----
+function build83(){
+  const A=aggregate(SESSIONS);
+  const nCourses=Object.keys(A.byCourse).length;
+  const overall=Object.values(A.byDim).reduce((s,d)=>s+d.sum,0)/Object.values(A.byDim).reduce((s,d)=>s+d.n,0);
+  // dimension means
+  const dimMeans=DIMS.map(d=>({d,avg:A.byDim[d].sum/A.byDim[d].n})).sort((a,b)=>a.avg-b.avg);
+  const weakestDim=dimMeans[0];
+  // PO coverage (for e: gaps = under-covered PO; redundancy = over-covered topic across courses)
+  const poRows=PROGRAM_OBJECTIVES.map(po=>({...po,avg:A.byPO[po.code].sum/A.byPO[po.code].n||0,n:A.byPO[po.code].topics}));
+  const poByCoverage=poRows.slice().sort((a,b)=>a.n-b.n);
+  const gapPO=poByCoverage[0];
+  // redundancy: topic taught in the most courses / most times
+  const redund=Object.entries(A.topicFreq).map(([name,v])=>({name,count:v.count,courses:v.courses.size,avg:v.sum/v.count})).filter(t=>t.courses>=2).sort((a,b)=>b.count-a.count)[0];
+  // course table
+  const courses=Object.entries(A.byCourse).map(([id,v])=>({id,name:v.name,block:v.block,avg:v.sum/v.n,n:v.n,misc:v.misc})).sort((a,b)=>a.block.localeCompare(b.block));
+  const flagged=courses.filter(c=>c.avg<2.9);
+
+  const dimRows=dimMeans.slice().sort((a,b)=>DIMS.indexOf(a.d)-DIMS.indexOf(b.d)).map(x=>`<div class="pobar-row"><span class="pobar-label">${x.d.charAt(0).toUpperCase()+x.d.slice(1)}</span><span class="pobar"><span class="pobar-fill" style="width:${pct(x.avg)}%;background:${colorFor(x.avg)};"></span></span><span class="pobar-val" style="color:${colorFor(x.avg)};">${fmt(x.avg)}</span></div>`).join('');
+  const poBars=poRows.map(po=>`<div class="pobar-row"><span class="pobar-label">${po.code} · ${po.label}</span><span class="pobar"><span class="pobar-fill" style="width:${pct(po.avg)}%;background:${colorFor(po.avg)};"></span></span><span class="pobar-val">${po.n} evt</span></div>`).join('');
+  const courseRows=courses.map(c=>`<tr><td>${c.block}</td><td>${c.name}</td><td class="num">${c.n}</td><td class="num" style="color:${colorFor(c.avg)};">${fmt(c.avg)}</td><td>${badge(c.avg)}</td></tr>`).join('');
+
+  const html=`
+  <div class="r83-mast">
+    <p class="eyebrow">LCME Data Collection Instrument · Full 2023–24 · Standard 8</p>
+    <h1>Element 8.3 — Curricular Content Monitoring</h1>
+    <p class="sub">Auto-composed from ${A.nSessions} de-identified small-group session analyses across ${nCourses} preclinical courses.</p>
+    <p class="provenance">Generated ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})} · ${A.totalEvents.toLocaleString()} learning events · illustrative demonstration data</p>
+  </div>
+
+  <div class="prompt-block">
+    <span class="prompt-tag">Prompt b</span>
+    <p class="prompt-q">Describe the process used for evaluation of the curriculum as a whole.</p>
+    <p class="prompt-src">Including horizontal and vertical integration of content and its placement against each program objective; whether instructional formats and assessment methods support determining that objectives are met; and the frequency of, and administrative support for, review.</p>
+    <div class="answer">
+      <p>The curriculum is evaluated <b>continuously</b> rather than in a single annual pass. Every small-group session is captured and scored by CORE against the USMLE-based objective taxonomy, producing an always-current record — <span class="fig">${A.nSessions} sessions</span> and <span class="fig">${A.totalEvents.toLocaleString()} learning events</span> this cycle. The Curriculum Committee reviews the rollup at the close of each block (six times per year) and in full annually.</p>
+      <div class="subhead">Vertical integration — understanding by learning dimension</div>
+      <p>Because every event carries a dimension, the committee can see whether reasoning builds coherently from mechanism through management across the year:</p>
+      ${dimRows}
+      <p style="margin-top:12px;">Instructional formats and assessments are judged adequate for a dimension when its mean clears the 3.0 threshold. <b>${weakestDim.d.charAt(0).toUpperCase()+weakestDim.d.slice(1)}</b> reasoning sits at <span class="fig">${fmt(weakestDim.avg)}</span> — the one dimension where current formats are <b>not</b> yet demonstrating that the objective is met, and is the committee's standing priority.</p>
+      <div class="subhead">Horizontal integration — placement across blocks</div>
+      <div class="tablewrap"><table class="d"><thead><tr><th>Block</th><th>Course</th><th class="num">Sessions</th><th class="num">Mean</th><th>Status</th></tr></thead><tbody>${courseRows}</tbody></table></div>
+      <p style="margin-top:12px;"><b>Frequency & administrative support:</b> block-level review is automated and delivered to the committee within 48 hours of each block's close; the associate dean for curriculum owns the review, with no manual data assembly required.</p>
+    </div>
+  </div>
+
+  <div class="prompt-block">
+    <span class="prompt-tag">Prompt c</span>
+    <p class="prompt-q">Describe how, how often, and for what purpose curriculum content is monitored, including the tools used.</p>
+    <p class="prompt-src">Including the tools (e.g., a curriculum database) available for content monitoring.</p>
+    <div class="answer">
+      <p><b>How:</b> CORE ingests the de-identified audio of each small group, segments it into discrete learning events, and maps every event to a standardized objective and one of five dimensions — presentation, pathophysiology, diagnosis, management, prognosis. <b>How often:</b> continuously, every session, with committee-facing rollups at each block boundary. <b>For what purpose:</b> to confirm intended content is actually delivered and understood, and to surface specific misconceptions while the cohort can still benefit.</p>
+      <p><b>Tool:</b> the CORE curriculum database is the system of record. It holds every session, topic, event, score, and flagged misconception, and is queryable by course, block, small group, objective, or dimension. This report was generated directly from it — no content was entered by hand.</p>
+    </div>
+  </div>
+
+  <div class="prompt-block">
+    <span class="prompt-tag">Prompt e</span>
+    <p class="prompt-q">Provide examples of how monitoring has been used to identify gaps and unwanted redundancies.</p>
+    <p class="prompt-src">How monitoring content and reviewing the linkage of course learning objectives to program objectives has identified gaps and unwanted redundancies in topic areas.</p>
+    <div class="answer">
+      <div class="subhead">Linkage — content mapped to program objectives</div>
+      ${poBars}
+      <div class="callout gap"><b>Gap identified.</b> Program objective <b>${gapPO.code} — ${gapPO.label}</b> is the least-represented in delivered content (<span class="fig">${gapPO.n} events</span>, well below the others). Monitoring flagged that <b>${weakestDim.d}</b>-dimension teaching — which feeds this objective — is under-delivered relative to plan. The committee has added a dedicated ${weakestDim.d} thread to the affected blocks.</div>
+      ${redund?`<div class="callout redund"><b>Redundancy identified.</b> <b>${redund.name}</b> was taught in <b>${redund.courses} separate courses</b> across the year (${redund.count} sessions), with overlapping objectives and no gain in understanding on the repeat exposures (mean <span class="fig">${fmt(redund.avg)}</span>). Flagged for consolidation so the recovered time can be redirected to the ${gapPO.label.toLowerCase()} gap above.</div>`:''}
+      <p style="margin-top:14px;">Both findings surfaced automatically from the linkage between delivered content and program objectives — the exact review Element 8.3 asks the committee to perform, now produced as a by-product of ordinary teaching.</p>
+    </div>
+  </div>`;
+  document.getElementById('report83').innerHTML=html;
+}
+
+// init
+renderDash();
+setCrumb([['Curriculum Dashboard',null]]);
+</script></body></html>

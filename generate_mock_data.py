@@ -1,142 +1,210 @@
 import os
 import json
+import re
+import random
+import math
 from anthropic import Anthropic
 
-def generate_cohort_transcripts(block_name, master_case, logistics_issue, total_tables):
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise ValueError("❌ Missing ANTHROPIC_API_KEY! Please set it in your terminal first.")
-    
-    client = Anthropic(api_key=api_key)
-    os.makedirs("data/synthetic_transcripts", exist_ok=True)
-    
-    table_dynamics = [
-        "One student anchors heavily on an initial piece of evidence and makes a critical diagnostic misstep. The group has to actively debate to correct it.",
-        "The group works through the logic, but gets deeply derailed talking about off-topic weekend plans for a few turns before getting back on track.",
-        "The students are highly confused by the case logic, leading to circular reasoning, stumbles, hesitations, and a call for the instructor's help.",
-        "The team splits into a heated disagreement over two competing diagnoses, arguing back and forth using clinical evidence.",
-        "The table struggles significantly with the infrastructure/logistics problem, letting tech frustration completely hijack the first half of their discussion."
-    ]
-    
-    print(f"\n🚀 Launching Cohort Simulation for {total_tables} tables in the [{block_name}] block...")
+# =====================================================================
+# 1. API AGNOSTIC LLM HANDLER
+# =====================================================================
+class LLMProvider:
+    """
+    Wrapper class to make LLM calls API-agnostic. 
+    Currently uses Anthropic, but you can easily add an OpenAI or Local function here.
+    """
+    def __init__(self, provider="anthropic"):
+        self.provider = provider
+        if self.provider == "anthropic":
+            self.api_key = os.environ.get("ANTHROPIC_API_KEY")
+            if not self.api_key:
+                raise ValueError("❌ Missing ANTHROPIC_API_KEY!")
+            self.client = Anthropic(api_key=self.api_key)
 
-    for table_num in range(1, total_tables + 1):
-        dynamic_profile = table_dynamics[(table_num - 1) % len(table_dynamics)]
-        simulated_audio_file = f"Table_{table_num:02d}_{block_name.replace(' ', '_')}_Session.m4a"
-        output_filename = f"data/synthetic_transcripts/{block_name}_synthetic_table_{table_num:02d}.json"
+    def generate_text(self, system_prompt, user_prompt):
+        if self.provider == "anthropic":
+            response = self.client.messages.create(
+                model="claude-haiku-4-5", # Or claude-3-haiku-20240307
+                max_tokens=4000,
+                temperature=0.85,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+            return response.content[0].text.strip()
+        # elif self.provider == "openai": ...
+        # elif self.provider == "local": ...
+        else:
+            raise ValueError(f"Unknown provider: {self.provider}")
+
+# =====================================================================
+# 2. CHAOS MATRIX
+# =====================================================================
+CHAOS_PROFILES = [
+    "[THE SPIRAL] The group gets obsessed with a minor distractor symptom and spends this entire segment going down the wrong rabbit hole.",
+    "[THE LONE WOLF] One student knows the correct answer instantly, but the rest of the table aggressively ignores or doubts them.",
+    "[THE DEADLOCK] Two students repeatedly talk past each other, fiercely arguing the same point but using different terminology.",
+    "[THE WEEKEND DETOUR] The group loses focus completely and spends 2 minutes talking about a difficult exam or weekend plans before snapping back to the case."
+]
+
+# =====================================================================
+# 3. GENERATION & ORCHESTRATION
+# =====================================================================
+def generate_long_transcript(block_name, master_case, table_num, target_minutes, add_chaos, llm):
+    """Generates a transcript in 5-minute epochs to prevent context drift and token limits."""
+    
+    # 5 mins = 1 epoch. (e.g., 15 mins = 3 epochs)
+    epochs_needed = math.ceil(target_minutes / 5.0)
+    all_raw_lines = []
+    recent_context = "No previous context. This is the start of the session."
+
+    print(f"\n🔄 Table {table_num} | Target: {target_minutes} mins | Epochs: {epochs_needed}")
+
+    for epoch in range(1, epochs_needed + 1):
+        print(f"   -> Generating Epoch {epoch}/{epochs_needed} (Mins {(epoch-1)*5} to {epoch*5})...")
         
-        print(f"🔄 Simulating Table {table_num}/{total_tables} -> {output_filename}...")
-        
-        # ADVANCED XML PROMPT (WITH CASE COHORT STABILIZATION)
-        master_prompt = f"""
-        <system_role>
-        You are a clinical education data simulation engine. Your sole task is to generate hyper-realistic, raw, un-sanitized conversational audio transcripts of medical students working in small groups.
-        </system_role>
+        # Determine behavior for this specific epoch
+        current_behavior = "Normal, productive clinical reasoning."
+        if add_chaos and random.random() > 0.4:  # 60% chance of chaos IF chaos is enabled
+            current_behavior = random.choice(CHAOS_PROFILES)
+            print(f"      [!] Injecting Chaos: {current_behavior.split(']')[0]}]")
 
-        <behavioral_guidelines>
-        1. NO AI PERFECTION: Real human dialogue is messy. Use false starts, interruptions, and vocal fillers ('uh', 'like', 'um', 'wait, hang on').
-        2. COGNITIVE STRUGGLE: Students must show real confusion, stuttering logic, or stubbornness when corrected.
-        3. INTENTIONAL PRIVACY VIOLATIONS: You must naturally plant real un-anonymized first names or professor mentions (e.g., "Marcus", "Sarah", "Dr. Patel") so our downstream security scripts can test removing them.
-        4. COHORT CONSTRAINTS (CRITICAL): Every table in this classroom is reviewing the EXACT same case file. Do not invent a different case or change the patient's presentation. They must all debate the exact case detailed in the current session variables.
-        </behavioral_guidelines>
-
-        <gold_standard_few_shot_example>
-        {{
-            "audio_metadata": {{
-                "file_name": "Table_00_Example_Session.m4a",
-                "detected_language": "en",
-                "total_duration_seconds": 0.0
-            }},
-            "conversation_analytics": {{
-                "total_speakers": 0,
-                "speaker_talk_time_seconds": {{}}
-            }},
-            "segments": [
-                {{
-                    "id": 0,
-                    "start": 1.2,
-                    "end": 4.4,
-                    "speaker": "SPEAKER_00",
-                    "text": "Wait... look at the... uh, the mean corpuscular volume here. It's like 115."
-                }},
-                {{
-                    "id": 1,
-                    "start": 4.2,
-                    "end": 8.8,
-                    "speaker": "SPEAKER_01",
-                    "text": "Hold up, Chris, let me see. Yeah, that's macrocytic."
-                }}
-            ]
-        }}
-        </gold_standard_few_shot_example>
-
-        <current_session_variables>
-        - Academic Module Block: {block_name}
-        - THE ABSOLUTE MASTER CASE PARAMETERS (All tables read this identical file): {master_case}
-        - Environmental/Logistical Friction: {logistics_issue}
-        - Assigned Table Group Dynamic: {dynamic_profile}
-        - Current Target Table Number: Table {table_num}
-        </current_session_variables>
-
-        <output_instructions>
-        Generate a completely original conversation tracking the current session variables. You must output between 14 and 20 conversational segments. 
-        Focus heavily on realistic dialogue text. For the metadata and analytics blocks, you can output 0 or dummy values, as a localized Python script will override your math with perfect calculations.
-        Respond with ONLY valid, raw JSON. Do not include markdown ticks (```json).
-        </output_instructions>
+        system_prompt = """
+        You are a clinical education data simulation engine. Your sole task is to generate raw, un-sanitized conversational audio transcripts of medical students in a small group.
+        NO AI PERFECTION: Real dialogue is messy. Use false starts, interruptions, and vocal fillers ('uh', 'like', 'um').
+        OUTPUT FORMAT: You must output ONLY screenplay dialogue. No JSON. No markdown. Format EXACTLY like this:
+        SPEAKER_00: Hey, did anyone look at the labs yet?
+        SPEAKER_01: Yeah, I have them pulled up.
         """
 
-        response = client.messages.create(
-            model="claude-haiku-4-5",
-            max_tokens=4000,
-            temperature=0.85,
-            messages=[{"role": "user", "content": master_prompt}]
+        user_prompt = f"""
+        - Block: {block_name}
+        - Master Case: {master_case}
+        
+        CURRENT PHASE: Epoch {epoch} of {epochs_needed}.
+        PREVIOUS CONTEXT (Last few lines spoken):
+        {recent_context}
+        
+        BEHAVIORAL INSTRUCTION FOR THIS SEGMENT:
+        {current_behavior}
+        
+        TASK:
+        Generate roughly 5 minutes of continuous dialogue (about 40-60 back-and-forth turns). 
+        Start immediately with the dialogue. Do not include scene directions or timestamps.
+        """
+
+        raw_epoch_text = llm.generate_text(system_prompt, user_prompt)
+        
+        # Clean and store the generated lines
+        lines = [line.strip() for line in raw_epoch_text.split('\n') if line.strip().startswith('SPEAKER_')]
+        all_raw_lines.extend(lines)
+
+        # Grab the last 4 lines to feed into the next epoch so the conversation connects flawlessly
+        if len(lines) > 4:
+            recent_context = "\n".join(lines[-4:])
+        else:
+            recent_context = "\n".join(lines)
+
+    return all_raw_lines
+
+# =====================================================================
+# 4. TEXT-TO-JSON PARSER & TIME MATH
+# =====================================================================
+def compile_to_json(raw_lines, output_filename, words_per_second=2.5):
+    """Converts raw text lines into perfect JSON with exact timestamps based on word counts."""
+    segments = []
+    current_time = 0.0
+    speaker_times = {}
+
+    for i, line in enumerate(raw_lines):
+        match = re.match(r'^(SPEAKER_\d+):\s*(.*)$', line)
+        if match:
+            speaker, text = match.groups()
+            word_count = len(text.split())
+            
+            # Calculate duration: Words / Speaking Rate, with a minimum floor of 1.0 second
+            duration = max(1.0, round(word_count / words_per_second, 1))
+            
+            # 10% chance of a slight interruption/overlap (negative pause), otherwise normal pause
+            pause = random.choice([-0.2, 0.3, 0.5, 0.8])
+            if current_time + pause < 0:
+                pause = 0
+                
+            start_time = round(current_time + pause, 1)
+            end_time = round(start_time + duration, 1)
+
+            segments.append({
+                "id": i,
+                "start": start_time,
+                "end": end_time,
+                "speaker": speaker,
+                "text": text
+            })
+            
+            # Update math trackers
+            current_time = end_time
+            speaker_times[speaker] = round(speaker_times.get(speaker, 0.0) + duration, 1)
+
+    total_duration = round(current_time, 1)
+
+    # Build the exact JSON schema your downstream engine expects
+    json_data = {
+        "audio_metadata": {
+            "file_name": os.path.basename(output_filename).replace(".json", ".m4a"),
+            "detected_language": "en",
+            "total_duration_seconds": total_duration
+        },
+        "conversation_analytics": {
+            "total_speakers": len(speaker_times),
+            "speaker_talk_time_seconds": speaker_times
+        },
+        "segments": segments
+    }
+
+    os.makedirs(os.path.dirname(output_filename), exist_ok=True)
+    with open(output_filename, "w", encoding="utf-8") as f:
+        json.dump(json_data, f, indent=4, ensure_ascii=False)
+        
+    return total_duration, len(segments)
+
+# =====================================================================
+# 5. MAIN EXECUTION
+# =====================================================================
+if __name__ == "__main__":
+    print("📋 --- ENTERPRISE CLINICAL COHORT GENERATOR ---")
+    
+    # User Inputs
+    user_block = input("Enter Course Block (e.g., Cardiology): ")
+    user_case = input("Enter Specific Case Details: ")
+    user_tables = int(input("How many classroom tables to simulate? (e.g., 1): "))
+    user_minutes = float(input("Target transcript length in minutes? (e.g., 5, 15, 30): "))
+    
+    # Chaos Matrix Prompt
+    chaos_input = input("Would you like to occasionally inject conversational chaos (tangents/arguments)? (y/n): ").lower()
+    add_chaos = chaos_input.startswith('y')
+
+    try:
+        llm_engine = LLMProvider(provider="anthropic")
+    except Exception as e:
+        print(e)
+        exit(1)
+
+    print(f"\n🚀 Launching Simulation Engine...")
+    
+    for table_num in range(1, user_tables + 1):
+        output_file = f"data/synthetic_transcripts/{user_block.replace(' ', '_')}_Table_{table_num:02d}.json"
+        
+        # 1. Generate text via epoch chaining
+        raw_script_lines = generate_long_transcript(
+            block_name=user_block, 
+            master_case=user_case, 
+            table_num=table_num, 
+            target_minutes=user_minutes, 
+            add_chaos=add_chaos,
+            llm=llm_engine
         )
         
-        raw_text = response.content[0].text.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text.split("```json")[1].split("```")[0].strip()
-        elif raw_text.startswith("```"):
-            raw_text = raw_text.split("```")[1].split("```")[0].strip()
-            
-        try:
-            json_data = json.loads(raw_text)
-            
-            # ======================================================================
-            # 🧮 PRIORITY 1: AUTOMATED PYTHON MATH POST-PROCESSING ENGINE
-            # ======================================================================
-            segments = json_data.get("segments", [])
-            if segments:
-                # 1. Calculate absolute total duration based on the final timestamp
-                total_duration = max(seg["end"] for seg in segments)
-                
-                # 2. Programmatically calculate individual speaker talk times
-                speaker_times = {}
-                for seg in segments:
-                    speaker = seg["speaker"]
-                    duration = round(seg["end"] - seg["start"], 1)
-                    if duration < 0: 
-                        duration = 0.0 # Handle accidental inverted timestamps
-                    speaker_times[speaker] = round(speaker_times.get(speaker, 0.0) + duration, 1)
-                
-                # 3. Force overwrite the JSON metadata block with perfect math
-                json_data["audio_metadata"]["total_duration_seconds"] = round(total_duration, 1)
-                json_data["conversation_analytics"]["total_speakers"] = len(speaker_times)
-                json_data["conversation_analytics"]["speaker_talk_time_seconds"] = speaker_times
-            # ======================================================================
-            
-            with open(output_filename, "w", encoding="utf-8") as f:
-                json.dump(json_data, f, indent=4, ensure_ascii=False)
-            print(f"✅ Table {table_num} generated and programmatically math-corrected.")
-            
-        except json.JSONDecodeError:
-            print(f"❌ Structural JSON crash on Table {table_num}.")
-
-if __name__ == "__main__":
-    print("📋 --- CLINICAL COHORT GENERATOR (MATH & CASE SYNCHRONIZED) ---")
-    
-    user_block = input("Enter Course Block (e.g., Neurology): ")
-    user_case = input("Enter Specific Case Details (e.g., 58yo male, acute lower back pain, T12-L1 compression on MRI, preserved knee reflexes, no bladder symptoms): ")
-    user_logistics = input("Enter Classroom Logistics issue (e.g., none): ")
-    user_tables = int(input("How many classroom tables do you want to simulate? (e.g., 3): "))
-            
-    generate_cohort_transcripts(user_block, user_case, user_logistics, user_tables)
+        # 2. Parse text into perfect JSON math
+        final_duration, total_segments = compile_to_json(raw_script_lines, output_file)
+        
+        actual_minutes = round(final_duration / 60.0, 1)
+        print(f"✅ Table {table_num} Complete: ~{actual_minutes} minutes generated ({total_segments} segments). Saved to {output_file}")

@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORE — Live Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --cream:#F6F1E7;
+    --paper:#FFFDF8;
+    --ink:#2A2420;
+    --ink-soft:#6B6255;
+    --line:#DDD3C0;
+    --rust:#B14C2C;
+    --rust-bg:#F3E1D8;
+    --gold:#96773A;
+    --gold-bg:#F0E6D2;
+    --sage:#5E7350;
+    --sage-bg:#E7EBE1;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding:40px 20px 80px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+
+  .sheet{
+    max-width:920px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    box-shadow:0 1px 3px rgba(42,36,32,0.05), 0 12px 32px -18px rgba(42,36,32,0.18);
+  }
+
+  /* ---------- Header ---------- */
+  .masthead{ padding:36px 44px 28px; border-bottom:2px solid var(--ink); position:relative; }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.14em;
+    text-transform:uppercase; color:var(--rust); margin:0 0 10px;
+  }
+  h1{ font-family:'Fraunces',serif; font-weight:600; font-size:36px; line-height:1.08; margin:0 0 8px; letter-spacing:-0.01em; }
+  .subtitle{ font-size:15px; color:var(--ink-soft); max-width:60ch; margin:0; }
+
+  /* ---------- Vitals strip ---------- */
+  .vitals{ display:grid; grid-template-columns:repeat(5,1fr); border-bottom:1px solid var(--line); }
+  .vital{ padding:20px 18px; border-right:1px solid var(--line); }
+  .vital:last-child{border-right:none;}
+  .vital .num{ font-family:'Fraunces',serif; font-weight:600; font-size:27px; line-height:1; }
+  .vital .label{ font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.07em; text-transform:uppercase; color:var(--ink-soft); margin-top:6px; }
+
+  section{padding:34px 44px;border-bottom:1px solid var(--line);}
+  section:last-of-type{border-bottom:none;}
+
+  .section-head{ display:flex; align-items:baseline; gap:12px; margin-bottom:6px; flex-wrap:wrap; }
+  .section-tag{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.1em;
+    color:var(--paper); background:var(--ink); padding:3px 8px;
+  }
+  h2{ font-family:'Fraunces',serif; font-weight:600; font-size:20px; margin:0; }
+  .section-note{ font-size:13px; color:var(--ink-soft); margin:8px 0 20px; max-width:64ch; }
+
+  /* ---------- Distribution chart ---------- */
+  .chart-wrap{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;}
+  svg text{font-family:'JetBrains Mono',monospace;}
+  .median-label{ font-family:'JetBrains Mono',monospace; font-size:11px; fill:var(--rust); }
+  .bar{fill:var(--gold);}
+  .bar.peak{fill:var(--ink);}
+  .axis-line{stroke:var(--line);stroke-width:1;}
+  .median-line{stroke:var(--rust);stroke-width:1.5;stroke-dasharray:4 3;}
+  .count-label{font-size:12px;fill:var(--ink);}
+  .score-label{font-size:12px;fill:var(--ink-soft);}
+  .chart-legend{ font-size:13px; color:var(--ink-soft); max-width:230px; line-height:1.55; }
+  .chart-legend strong{color:var(--ink);font-weight:600;}
+
+  /* ---------- Controls (search / filter / sort) ---------- */
+  .controls{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .controls input[type="text"], .controls select{
+    font-family:'Inter',sans-serif; font-size:13px; color:var(--ink);
+    background:var(--cream); border:1px solid var(--line); padding:8px 12px;
+  }
+  .controls input[type="text"]{ flex:1 1 200px; min-width:160px; }
+  .controls select{ cursor:pointer; }
+  .controls input:focus, .controls select:focus{ outline:2px solid var(--rust); outline-offset:1px; }
+  .result-count{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-soft); margin-bottom:14px; }
+
+  /* ---------- Topic cards ---------- */
+  .topic-card{ border:1px solid var(--line); background:var(--paper); margin-bottom:10px; cursor:pointer; }
+  .topic-card.status-review{border-left:3px solid var(--rust);}
+  .topic-card.status-developing{border-left:3px solid var(--gold);}
+  .topic-card.status-solid{border-left:3px solid var(--sage);}
+
+  .topic-row{ display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 18px; }
+  .topic-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .topic-rank{ font-family:'Fraunces',serif; font-size:19px; color:var(--line); width:20px; flex-shrink:0; }
+  .topic-name{ font-family:'Fraunces',serif; font-weight:600; font-size:16px; }
+  .dim-tag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+    color:var(--ink-soft); border:1px solid var(--line); padding:2px 7px; white-space:nowrap;
+  }
+  .miscon-flag{
+    font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.04em;
+    color:var(--rust); white-space:nowrap;
+  }
+
+  .topic-meta{display:flex;align-items:center;gap:18px;flex-shrink:0;}
+  .gauge-wrap{display:flex;flex-direction:column;align-items:flex-end;}
+  .gauge-score{ font-family:'JetBrains Mono',monospace; font-weight:600; font-size:14px; }
+  .gauge-score.review{color:var(--rust);}
+  .gauge-score.developing{color:var(--gold);}
+  .gauge-score.solid{color:var(--sage);}
+  .gauge{width:100px;height:14px;position:relative;margin-top:4px;}
+  .gauge-track{ position:absolute;top:6px;left:0;right:0;height:2px;background:var(--line); }
+  .gauge-dot{
+    position:absolute;top:2px;width:10px;height:10px;border-radius:50%;
+    transform:translateX(-50%); border:2px solid var(--paper); box-shadow:0 0 0 1px var(--ink);
+  }
+  .gauge-dot.review{background:var(--rust);}
+  .gauge-dot.developing{background:var(--gold);}
+  .gauge-dot.solid{background:var(--sage);}
+
+  .chev{ font-size:13px; color:var(--ink-soft); transition:transform 0.18s ease; flex-shrink:0; }
+  .topic-card.open .chev{transform:rotate(90deg);}
+
+  .topic-detail{ max-height:0; overflow:hidden; transition:max-height 0.22s ease; border-top:1px solid transparent; }
+  .topic-card.open .topic-detail{border-top:1px solid var(--line);}
+  .topic-detail-inner{padding:14px 18px 18px;}
+  .detail-block{margin-bottom:14px;}
+  .detail-block:last-child{margin-bottom:0;}
+  .detail-label{
+    font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:8px;
+  }
+  .event-row{
+    display:flex; align-items:baseline; gap:10px; font-size:13px; padding:6px 0;
+    border-bottom:1px dotted var(--line);
+  }
+  .event-row:last-child{border-bottom:none;}
+  .event-id{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); width:70px; flex-shrink:0; }
+  .event-score{ font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; width:26px; flex-shrink:0; }
+  .event-speaker{ font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink-soft); width:78px; flex-shrink:0; }
+  .event-note{ color:var(--ink-soft); font-style:italic; }
+  .misconception{
+    font-size:13.5px; line-height:1.55; padding:10px 12px; background:var(--rust-bg);
+    border-left:2px solid var(--rust); margin-bottom:8px;
+  }
+  .misconception:last-child{margin-bottom:0;}
+  .misconception .evt-id{
+    font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--rust);
+    display:block; margin-bottom:4px; letter-spacing:0.04em;
+  }
+  .no-misconceptions{
+    font-size:13.5px; color:var(--sage); background:var(--sage-bg); padding:10px 12px; border-left:2px solid var(--sage);
+  }
+  .speaker-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{ font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 9px; background:var(--cream); border:1px solid var(--line); }
+  .stat-line{display:flex;gap:20px;font-size:13px;color:var(--ink-soft);flex-wrap:wrap;}
+  .stat-line b{color:var(--ink);font-weight:600;}
+
+  .show-more-btn{
+    display:block; width:100%; text-align:center; font-family:'JetBrains Mono',monospace; font-size:12px;
+    letter-spacing:0.04em; color:var(--ink); background:var(--cream); border:1px dashed var(--line);
+    padding:11px; cursor:pointer; margin-top:4px;
+  }
+  .show-more-btn:hover{background:var(--gold-bg);border-color:var(--gold);}
+
+  .empty-state{ font-size:13px; color:var(--ink-soft); padding:20px; text-align:center; border:1px dashed var(--line); }
+
+  footer{
+    padding:22px 44px 30px; font-family:'JetBrains Mono',monospace; font-size:10.5px;
+    letter-spacing:0.04em; color:var(--ink-soft); display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  }
+
+  a:focus-visible, .topic-card:focus-visible{ outline:2px solid var(--rust);outline-offset:2px; }
+
+  @media (max-width:640px){
+    body{padding:16px 10px;}
+    .masthead,section,footer{padding-left:20px;padding-right:20px;}
+    .vitals{grid-template-columns:repeat(2,1fr);}
+    .vital{border-bottom:1px solid var(--line);}
+    h1{font-size:26px;}
+    .topic-row{flex-wrap:wrap;}
+    .topic-meta{width:100%;justify-content:space-between;}
+    .chart-wrap{flex-direction:column;}
+  }
+
+/* ---------- Demo shell ---------- */
+.app{max-width:960px;margin:0 auto 60px;}
+.appbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 4px 18px;flex-wrap:wrap;}
+.brand{display:flex;align-items:baseline;gap:12px;}
+.brand .logo{font-family:'Fraunces',serif;font-weight:600;font-size:26px;letter-spacing:-0.01em;color:var(--ink);}
+.brand .tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--rust);}
+.tabs{display:flex;gap:4px;background:var(--paper);border:1px solid var(--line);padding:4px;}
+.tab{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.04em;padding:8px 14px;cursor:pointer;color:var(--ink-soft);background:transparent;border:none;text-transform:uppercase;}
+.tab.active{background:var(--ink);color:var(--paper);}
+.tab:focus-visible{outline:2px solid var(--rust);outline-offset:1px;}
+.view{display:none;}
+.view.active{display:block;}
+.panel{background:var(--paper);border:1px solid var(--line);box-shadow:0 1px 3px rgba(42,36,32,0.05),0 12px 32px -18px rgba(42,36,32,0.18);}
+.panel-head{padding:28px 36px 20px;border-bottom:2px solid var(--ink);}
+.panel-head .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--rust);margin:0 0 8px;}
+.panel-head h1{font-family:'Fraunces',serif;font-weight:600;font-size:28px;line-height:1.1;margin:0 0 6px;}
+.panel-head p{font-size:14px;color:var(--ink-soft);margin:0;max-width:66ch;}
+.panel-body{padding:28px 36px 32px;}
+textarea#transcript{width:100%;min-height:240px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;color:var(--ink);background:var(--cream);border:1px solid var(--line);padding:16px;resize:vertical;}
+textarea#transcript:focus{outline:2px solid var(--rust);outline-offset:1px;}
+/* dropzone */
+.dropzone{border:1.5px dashed var(--line);background:var(--cream);padding:22px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:14px;}
+.dropzone:hover{border-color:var(--gold);}
+.dropzone.dragging{border-color:var(--rust);background:var(--rust-bg);}
+.dropzone:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+.dz-icon{width:40px;height:40px;flex-shrink:0;border:1.5px solid var(--ink-soft);display:flex;align-items:center;justify-content:center;font-size:19px;color:var(--ink-soft);}
+.dropzone.dragging .dz-icon{border-color:var(--rust);color:var(--rust);}
+.dz-text{flex:1;min-width:0;}
+.dz-text b{font-family:'Fraunces',serif;font-size:15px;color:var(--ink);display:block;}
+.dz-text span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);letter-spacing:0.02em;}
+.dz-loaded{color:var(--sage)!important;}
+.dz-or{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);letter-spacing:0.1em;text-transform:uppercase;text-align:center;margin:0 0 12px;position:relative;}
+.dz-or::before,.dz-or::after{content:"";position:absolute;top:50%;width:calc(50% - 26px);height:1px;background:var(--line);}
+.dz-or::before{left:0;}.dz-or::after{right:0;}
+.input-controls{display:flex;gap:10px;align-items:center;margin-top:16px;flex-wrap:wrap;}
+.btn{font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.04em;padding:11px 20px;cursor:pointer;border:1px solid var(--ink);background:var(--ink);color:var(--paper);text-transform:uppercase;}
+.btn:hover{background:#000;}
+.btn.ghost{background:transparent;color:var(--ink);}
+.btn.ghost:hover{background:var(--gold-bg);border-color:var(--gold);}
+.btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+.hint{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);margin-left:auto;}
+.pipeline{display:flex;gap:0;margin:22px 0 4px;flex-wrap:wrap;}
+.pstep{flex:1 1 0;min-width:120px;padding:12px 14px;border:1px solid var(--line);border-right:none;background:var(--cream);position:relative;}
+.pstep:last-child{border-right:1px solid var(--line);}
+.pstep .pn{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);letter-spacing:0.08em;}
+.pstep .pl{font-family:'Fraunces',serif;font-size:14px;color:var(--ink);margin-top:2px;}
+.pstep.done{background:var(--sage-bg);}
+.pstep.done .pl{color:var(--sage);}
+.pstep.active-step{background:var(--gold-bg);}
+.notice{font-size:12.5px;color:var(--ink-soft);font-style:italic;margin-top:18px;padding:12px 14px;background:var(--cream);border-left:2px solid var(--gold);}
+/* LCME form */
+.lcme-meta{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-bottom:none;}
+.lcme-meta div{padding:16px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);}
+.lcme-meta div:nth-child(4n){border-right:none;}
+.lcme-meta .k{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-soft);}
+.lcme-meta .v{font-family:'Fraunces',serif;font-size:16px;color:var(--ink);margin-top:4px;}
+.element{border:1px solid var(--line);margin-top:22px;}
+.element-head{padding:18px 22px;background:var(--ink);color:var(--paper);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+.element-head .code{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.06em;color:var(--gold-bg);background:rgba(255,255,255,0.1);padding:3px 9px;}
+.element-head h3{font-family:'Fraunces',serif;font-weight:600;font-size:19px;margin:0;}
+.element-body{padding:22px;}
+.field{margin-bottom:20px;}
+.field:last-child{margin-bottom:0;}
+.field .flabel{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.06em;text-transform:uppercase;color:var(--rust);margin-bottom:8px;}
+.field .fval{font-size:14px;line-height:1.6;color:var(--ink);}
+.field .fval b{font-weight:600;}
+.compbar-row{display:flex;align-items:center;gap:12px;margin:7px 0;font-size:13px;}
+.compbar-label{font-family:'JetBrains Mono',monospace;font-size:11px;width:78px;flex-shrink:0;color:var(--ink-soft);}
+.compbar{flex:1;height:16px;background:var(--cream);border:1px solid var(--line);position:relative;}
+.compbar-fill{height:100%;}
+.compbar-val{font-family:'JetBrains Mono',monospace;font-size:11px;width:52px;text-align:right;flex-shrink:0;}
+.tablewrap{overflow-x:auto;}
+table.lcme{width:100%;border-collapse:collapse;font-size:13px;}
+table.lcme th,table.lcme td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);}
+table.lcme th{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:500;}
+table.lcme td.num{font-family:'JetBrains Mono',monospace;text-align:right;}
+.badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 7px;text-transform:uppercase;letter-spacing:0.04em;}
+.badge.ok{color:var(--sage);background:var(--sage-bg);}
+.badge.watch{color:var(--gold);background:var(--gold-bg);}
+.badge.flag{color:var(--rust);background:var(--rust-bg);}
+.attestation{margin-top:22px;padding:16px 18px;border:1px dashed var(--line);background:var(--cream);font-size:12.5px;color:var(--ink-soft);line-height:1.6;}
+@media (max-width:640px){.panel-head,.panel-body{padding-left:20px;padding-right:20px;}.lcme-meta{grid-template-columns:repeat(2,1fr);}.pipeline{flex-direction:column;}.pstep{border-right:1px solid var(--line);border-bottom:none;}.pstep:last-child{border-bottom:1px solid var(--line);}}
+
+.report-toggle{display:inline-flex;gap:0;margin-top:16px;border:1px solid var(--line);}
+.rt-btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em;text-transform:uppercase;padding:8px 16px;cursor:pointer;background:var(--paper);color:var(--ink-soft);border:none;border-right:1px solid var(--line);}
+.rt-btn:last-child{border-right:none;}
+.rt-btn.active{background:var(--ink);color:var(--paper);}
+.rt-btn:focus-visible{outline:2px solid var(--rust);outline-offset:2px;}
+.raw-report{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.65;color:var(--ink);background:var(--cream);border:1px solid var(--line);padding:24px 28px;white-space:pre-wrap;word-break:break-word;overflow-x:auto;margin:0;}
+</style></head><body>
+<div class="app">
+  <div class="appbar">
+    <div class="brand"><span class="logo">CORE</span><span class="tag">Live Demo</span></div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-view="input" role="tab">Transcript</button>
+      <button class="tab" data-view="report" role="tab">Faculty Report</button>
+    </div>
+  </div>
+
+  <!-- VIEW 1: INPUT -->
+  <div class="view active" id="view-input">
+    <div class="panel">
+      <div class="panel-head">
+        <p class="eyebrow">Step One · Ambient Capture</p>
+        <h1>Drop in a small-group transcript</h1>
+        <p>This is what CORE ingests: the raw, de-identified conversation from one case discussion. A sample thyroid session is loaded below. Run CORE to see the analysis it produces.</p>
+      </div>
+      <div class="panel-body">
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Drag and drop a transcript file, or click to browse">
+          <div class="dz-icon">⇪</div>
+          <div class="dz-text">
+            <b id="dz-title">Drag &amp; drop a transcript file</b>
+            <span id="dz-sub">or click to browse — .txt transcript from the session</span>
+          </div>
+        </div>
+        <input type="file" id="file-input" accept=".txt,text/plain" style="display:none;">
+        <p class="dz-or">or paste / edit below</p>
+        <textarea id="transcript" spellcheck="false"></textarea>
+        <div class="input-controls">
+          <button class="btn" id="run-btn">Run CORE →</button>
+          <button class="btn ghost" id="reset-btn">Reset sample</button>
+          <span class="hint" id="char-count"></span>
+        </div>
+        <div class="pipeline" id="pipeline">
+          <div class="pstep" data-step="0"><div class="pn">PASS 1</div><div class="pl">Segment turns</div></div>
+          <div class="pstep" data-step="1"><div class="pn">PASS 2</div><div class="pl">Detect topics</div></div>
+          <div class="pstep" data-step="2"><div class="pn">PASS 3</div><div class="pl">Map to taxonomy</div></div>
+          <div class="pstep" data-step="3"><div class="pn">PASS 4</div><div class="pl">Score &amp; flag</div></div>
+          <div class="pstep" data-step="4"><div class="pn">PASS 5</div><div class="pl">Roll up</div></div>
+        </div>
+        <div class="notice">Demonstration build — this runs a deterministic version of the analysis in your browser, so the same session always yields the same report. In the live product, CORE's models perform the scoring and taxonomy mapping on the transcript.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 2: REPORT -->
+  <div class="view" id="view-report">
+    <div class="sheet">
+      <div class="masthead">
+        <p class="eyebrow">Small Group Case Review</p>
+        <h1 id="rep-title">Thyroid Dysfunction — Small Group</h1>
+        <p class="subtitle">A rollup of how this group reasoned through a case discussion — where understanding held, and where it needs a second pass.</p>
+        <div class="report-toggle" role="tablist" aria-label="Report view">
+          <button class="rt-btn active" id="rt-report" role="tab" aria-selected="true">Faculty Report</button>
+          <button class="rt-btn" id="rt-raw" role="tab" aria-selected="false">Raw Rollup (.txt)</button>
+        </div>
+      </div>
+      <div class="vitals" id="vitals"></div>
+      <div id="report-rich">
+      <section id="assessment"><div class="section-head"><span class="section-tag">Assessment</span><h2>Understanding Score Distribution</h2></div><p class="section-note" id="assessment-note"></p><div class="chart-wrap"><svg id="chart-svg" width="560" height="230" viewBox="0 0 560 230" role="img" aria-label="Bar chart of understanding scores."></svg><div class="chart-legend" id="chart-legend"></div></div></section>
+      <section id="differential"><div class="section-head"><span class="section-tag">Differential</span><h2>Areas for Review</h2></div><p class="section-note" id="differential-note"></p><div id="differential-list"></div></section>
+      <section id="problem-list"><div class="section-head"><span class="section-tag">Problem List</span><h2>Full Topic Summary</h2></div><p class="section-note">Every topic the discussion touched, matched against the Endocrine System / Thyroid disorders taxonomy. Search, filter, or sort — click any topic to see its events, misconceptions, and speakers.</p><div class="controls"><input type="text" id="search-input" placeholder="Search topics…" autocomplete="off"><select id="dimension-filter"></select><select id="sort-select"><option value="score-asc">Score: lowest first</option><option value="score-desc">Score: highest first</option><option value="name-asc">Name: A → Z</option><option value="events-desc">Most discussed</option></select></div><div class="result-count" id="result-count"></div><div id="problem-list-items"></div></section>
+      <footer><span>Taxonomy Rollup &amp; Analysis Report</span><span id="footer-stats"></span></footer>
+      </div>
+      <pre id="report-raw" class="raw-report" hidden></pre>
+    </div>
+  </div>
+  </div>
+
+<script type="text/plain" id="sample-transcript">======================================================================
+SMALL GROUP DISCUSSION TRANSCRIPT (SYNTHETIC / MOCK)
+Session: Thyroid Dysfunction Case Review  |  Duration: ~20 minutes
+Speakers: Dr. Bennett (facilitator), Student_A-E
+Note: Generated to match the taxonomy rollup report — for UI mockup
+purposes only, not a real transcript.
+======================================================================
+
+[00:00:12] Dr. Bennett: All right, let's get started. Twenty minutes, and I've got a stack of thyroid vignettes for us to work through — jump in whenever you've got something, and push back on each other if you disagree.
+[00:00:19] Dr. Bennett: Medullary thyroid cancer — where does it actually originate, and why does that change how we monitor it?
+[00:00:29] Student_B: It comes from the follicular cells, right? So a single TSH should tell us whether it's active or not.
+[00:00:38] Dr. Bennett: Say this patient is now in thyroid storm. Walk me through initial management.
+[00:00:45] Student_C: We'd start beta-blockers for the cardiovascular symptoms and probably start antithyroid meds too.
+[00:00:52] Student_C: Right, and the order actually matters — beta-blocker first for symptom control, then a thionamide, then iodine after that's on board so we're not fueling more hormone synthesis, plus stress-dose steroids and aggressive cooling.
+[00:01:01] Dr. Bennett: For an indeterminate thyroid nodule, what's guiding the management decision?
+[00:01:10] Student_E: I mean, most nodules are benign, so I'd just say we monitor with ultrasound and move on.
+[00:01:19] Student_D: I'd push a bit further than that — size and sonographic features determine whether we biopsy versus just serially image, and molecular testing on the FNA can help sort out truly indeterminate ones.
+[00:01:24] Dr. Bennett: How does a patient with central, pituitary-driven hypothyroidism actually present, and what tips you off that it's not primary thyroid failure?
+[00:01:34] Student_B: Honestly they'd look just like any hypothyroid patient — fatigue, weight gain, cold intolerance. I don't think you need anything beyond the clinical picture to sort that out.
+[00:01:39] Student_E: There's usually a clue though — if there's a history of pituitary surgery or radiation, or other axes are off too, like low cortisol or irregular periods, that points you toward the pituitary.
+[00:01:47] Student_E: And classically the goiter you'd expect with primary hypothyroidism is usually absent here, since TSH itself isn't elevated to drive gland growth.
+[00:01:54] Student_B: I'd still lean toward just going with how bad the fatigue is — if it's severe, that's your hypothyroidism regardless of where it's coming from.
+[00:02:03] Dr. Bennett: What actually confirms a diagnosis of Hashimoto's, versus just hypothyroidism in general?
+[00:02:10] Student_C: TPO antibodies, mainly — anti-thyroid peroxidase, sometimes anti-thyroglobulin too, plus the ultrasound often shows a heterogeneous, hypoechoic gland.
+[00:02:16] Student_E: Honestly I'd just say it's Hashimoto's because it's the most common cause of hypothyroidism here — I wasn't sure we needed to rule out anything else first.
+[00:02:24] Student_A: I think the antibody piece matters, but I'm blanking on whether you need both antibodies or just one to call it.
+[00:02:33] Student_C: Just TPO alone is usually sufficient — it's positive in the vast majority of cases, though a minority of true Hashimoto's patients can be seronegative, so a supportive ultrasound picture still helps if antibodies are borderline.
+[00:02:42] Dr. Bennett: This patient has a rapidly enlarging neck mass. How do we work up suspected anaplastic thyroid cancer?
+[00:02:51] Student_D: I guess we'd just check TSH and free T4 like any thyroid problem to start.
+[00:02:59] Student_E: Wait — could this just be a rapidly growing multinodular goiter?
+[00:03:05] Dr. Bennett: What would make you second-guess a benign read here?
+[00:03:12] Student_E: Right — the speed of growth. That should push us straight to core needle biopsy and cross-sectional imaging rather than assuming benign.
+[00:03:18] Dr. Bennett: Mechanistically, what's actually driving the crisis in thyroid storm — why does it decompensate so fast?
+[00:03:28] Student_E: It's a surge in free hormone plus a loss of the buffering that thyroid-binding globulin usually provides, on top of increased peripheral sensitivity to catecholamines — that's why the heart and everything else redlines.
+[00:03:36] Student_D: Isn't it basically just... a lot of thyroid hormone at once?
+[00:03:41] Student_A: There's also usually a precipitant — infection, surgery, stopping meds — that tips a compensated hyperthyroid state into decompensation, though I'm fuzzy on the actual catecholamine piece.
+[00:03:46] Dr. Bennett: How does a goiter actually present, and does the exam alone tell you anything about thyroid function?
+[00:03:53] Student_E: I'd say you can pretty much tell from the exam whether it's over- or under-active just by how the gland feels and the patient's symptoms.
+[00:04:02] Dr. Bennett: Is that actually true, though — can you tell function from the exam alone?
+[00:04:08] Student_E: Not quite — a goiter can be euthyroid, hyper-, or hypofunctioning and look almost identical on exam. You need the full thyroid panel, including free T4, to know what you're actually dealing with.
+[00:04:15] Dr. Bennett: What would make you suspect secondary — meaning TSH-driven — hyperthyroidism rather than primary Graves or a toxic nodule?
+[00:04:21] Student_C: The big clue is the TSH itself — if it's not suppressed, or is even a little high alongside a high free T4, that's not primary disease.
+[00:04:28] Student_D: Right, and clinically it can look identical to any hyperthyroid patient — palpitations, weight loss, heat intolerance — the pituitary source usually only reveals itself through labs, or imaging if you're suspecting a TSH-secreting adenoma, sometimes with visual field changes if it's compressing the chiasm.
+[00:04:36] Student_D: I think there's also something about alpha-subunit levels? I don't remember exactly how that fits in.
+[00:04:45] Dr. Bennett: How would you counsel a patient on prognosis after a papillary thyroid cancer diagnosis?
+[00:04:56] Student_C: It's a cancer, so I'd say prognosis is pretty guarded overall.
+[00:05:04] Student_C: Actually wait, I think papillary is supposed to be one of the better ones — I just don't remember the actual numbers.
+[00:05:12] Student_D: It is — excellent long-term survival, often well over 90-95% at ten years for localized disease, since it tends to be slow-growing and very treatable even with nodal spread.
+[00:05:20] Dr. Bennett: Why can't FNA alone diagnose follicular thyroid cancer the way it can papillary?
+[00:05:31] Student_B: Because the cytology looks the same whether it's benign or malignant — the diagnosis actually depends on capsular or vascular invasion, which you can only see on the full surgical specimen.
+[00:05:40] Student_D: Can't you just tell from the FNA if the cells look follicular?
+[00:05:48] Student_B: Right, follicular architecture on FNA just tells you it's a 'follicular neoplasm' — it doesn't tell you malignant versus benign on its own, though I'm blanking on what pushes you toward surgery versus watching it.
+[00:05:54] Student_D: Size and any suspicious ultrasound features would push toward diagnostic lobectomy, since that's really the only way to get the histology you need.
+[00:06:01] Student_B: And molecular testing can help triage some indeterminate ones, though I don't remember which mutations specifically.
+[00:06:06] Dr. Bennett: How does thyroid dysfunction actually show up as an infertility complaint?
+[00:06:12] Student_A: Usually as irregular or anovulatory cycles — both hypo- and hyperthyroidism can disrupt the menstrual cycle enough to cause infertility.
+[00:06:18] Student_A: And it's not always dramatic — even subclinical hypothyroidism gets linked to difficulty conceiving and early pregnancy loss.
+[00:06:26] Student_B: I know TSH gets checked as part of a fertility workup, I'm just not sure what threshold they use in that context.
+[00:06:32] Student_B: Right, and it's stricter than the general population reference range — most fertility guidelines want TSH under 2.5 before or during early pregnancy attempts.
+[00:06:39] Dr. Bennett: What's the actual difference, mechanistically, between thyrotoxicosis and hyperthyroidism?
+[00:06:50] Student_E: I think thyrotoxicosis is more just the state of having too much hormone circulating, and hyperthyroidism specifically means the gland itself is overproducing it — like thyroiditis would give you thyrotoxicosis without true hyperthyroidism. I'm not fully sure I'm drawing that line right, though.
+[00:06:58] Dr. Bennett: What's actually happening at the gland level during the hyperthyroid phase of subacute thyroiditis?
+[00:07:09] Student_E: Inflammation is disrupting the follicles and dumping preformed hormone into circulation — it's not new synthesis, which is why radioactive iodine uptake is low during that phase.
+[00:07:16] Student_D: And that's exactly what separates it from Graves on uptake scan, even though the labs can look similar in the thyrotoxic phase.
+[00:07:24] Dr. Bennett: Does euthyroid sick syndrome need treatment, and what's the actual prognosis tied to?
+[00:07:34] Student_A: Generally no — it resolves as the underlying illness resolves, so prognosis really tracks with the severity of whatever critical illness is driving it, not the thyroid numbers themselves.
+[00:07:42] Student_B: I'd just treat the low T3 directly with supplementation, honestly — I don't think what medications they're on really changes that.
+[00:07:51] Dr. Bennett: Would anything on the med list change how you interpret those labs first?
+[00:07:59] Student_B: ...I guess amiodarone or steroids could be messing with the numbers too, so maybe I shouldn't assume it's purely the illness driving it.
+[00:08:08] Student_B: So I'd hold off on treating and just recheck once the acute illness — and whatever meds are confounding it — are sorted out, though I'm not fully sure when repeat testing makes sense.
+[00:08:17] Dr. Bennett: Any atypical presentations of thyrotoxicosis we should watch for?
+[00:08:26] Student_D: I'd assume it's always going to be the classic picture — tremor, weight loss, tachycardia — straight from the thyroid itself.
+[00:08:35] Dr. Bennett: What about our patient with the amenorrhea from the earlier case — anything there that complicates that?
+[00:08:42] Student_D: Oh — right, her reproductive history was actually part of the picture too. I wasn't factoring that in as a contributing piece.
+[00:08:49] Dr. Bennett: What's the expected disease course for someone newly diagnosed with Hashimoto's?
+[00:09:00] Student_A: I think it's usually progressive — most people eventually need levothyroxine, I just don't know the typical timeline.
+[00:09:05] Student_A: Right, it's a gradual decline in function as the gland is destroyed — some patients stay subclinical for years, but most eventually progress to overt hypothyroidism, and once you're on replacement it's generally a lifelong, well-controlled condition with a normal life expectancy.
+[00:09:12] Dr. Bennett: What's actually suppressing T3 in a critically ill patient with nonthyroidal illness syndrome?
+[00:09:22] Student_C: I'd just chalk it up to the illness itself being the cause — I wasn't really thinking about whether any of their meds could be adding to that.
+[00:09:28] Dr. Bennett: Walk me through your diagnostic approach to a newly found thyroid nodule.
+[00:09:39] Student_A: Start with TSH — if it's low, get an uptake scan since a hot nodule doesn't need biopsy. If TSH is normal or high, risk-stratify on ultrasound using something like TI-RADS, and biopsy anything meeting size-and-feature thresholds.
+[00:09:46] Dr. Bennett: What distinguishes Graves' presentation from other causes of hyperthyroidism?
+[00:09:56] Student_C: The extrathyroidal findings — orbitopathy, pretibial myxedema, and a diffusely enlarged, sometimes bruit-positive gland — those point you toward Graves specifically rather than a toxic nodule or thyroiditis.
+[00:10:05] Dr. Bennett: How do you titrate levothyroxine once you've started treatment?
+[00:10:15] Student_E: I'd just keep adjusting the dose based on whatever the TSH says that day — dose up if it's high, down if it's low — and not think too much beyond that.
+[00:10:20] Student_C: I'd check it about six weeks after any dose change before adjusting again — though honestly I'd probably just go off that one recheck rather than thinking about anything else that could be shifting her levels, like pregnancy.
+[00:10:26] Student_C: And I think absorption issues — calcium, iron, coffee — can throw off the level too, I just don't remember the exact timing you're supposed to separate those by.
+[00:10:35] Dr. Bennett: What symptoms, if any, does a thyroid nodule typically cause?
+[00:10:43] Student_E: Most are asymptomatic and found incidentally — you'd only expect symptoms like dysphagia, dyspnea, or voice change if it's large enough to compress local structures, or hoarseness specifically if it's invading the recurrent laryngeal nerve.
+[00:10:50] Dr. Bennett: What's the classic symptom cluster for hyperthyroidism?
+[00:10:56] Student_B: Weight loss despite normal appetite, heat intolerance, palpitations, tremor... I know there's more but I'm blanking on the rest.
+[00:11:01] Dr. Bennett: How does Hashimoto's typically present early on, before someone's overtly hypothyroid?
+[00:11:10] Student_C: Usually just a painless goiter, maybe found on exam, before the labs show anything definitive.
+[00:11:18] Student_A: And some patients actually go through a transient hyperthyroid phase early — sometimes called Hashitoxicosis — before eventually swinging hypothyroid as the gland gets destroyed.
+[00:11:23] Dr. Bennett: What's your diagnostic algorithm once you've confirmed biochemical thyrotoxicosis?
+[00:11:31] Student_A: Radioactive iodine uptake and scan — diffuse high uptake points to Graves, patchy uptake to toxic multinodular goiter or a solitary hot nodule, and low uptake points to thyroiditis or exogenous hormone.
+[00:11:36] Student_B: I'd just order the uptake scan right away — I wasn't really thinking about whether anything on her med list, like amiodarone or recent contrast, could throw that off.
+[00:11:44] Dr. Bennett: Would that change your approach at all?
+[00:11:51] Student_B: Yeah, actually — I should check for iodine exposure first, since that could make the uptake falsely low regardless of the real diagnosis.
+[00:11:56] Student_C: I'd probably just go straight to antithyroid drugs without the scan, honestly.
+[00:12:03] Student_E: I think I'd also just treat empirically here — I wasn't factoring in that a single set of labs might not be enough to commit to a diagnosis before starting something.
+[00:12:11] Dr. Bennett: What would make you want another data point before you commit?
+[00:12:20] Student_E: Right, I should probably repeat the labs or confirm with imaging before locking in the diagnosis, especially if the picture's mixed.
+[00:12:25] Dr. Bennett: How does euthyroid sick syndrome actually present clinically?
+[00:12:31] Student_A: I think you'd just draw thyroid labs once on presentation and that tells you what's going on.
+[00:12:40] Dr. Bennett: What's the fertility outlook once thyroid dysfunction is corrected?
+[00:12:50] Student_A: Prognosis is actually very good — once euthyroid, ovulatory cycles typically resume and fertility outcomes normalize close to baseline.
+[00:12:55] Student_A: And it holds for pregnancy outcomes too — properly treated thyroid disease going into pregnancy dramatically cuts the risk of miscarriage and preterm delivery compared to untreated disease.
+[00:13:03] Dr. Bennett: For a benign nodule on biopsy, what's the long-term prognosis and follow-up?
+[00:13:14] Student_E: Excellent prognosis — you'd just do interval ultrasound, maybe at 12-24 months, to make sure it's stable.
+[00:13:23] Student_E: And if it grows or develops suspicious features on repeat imaging, that's when you'd re-biopsy rather than assuming the first benign read holds forever.
+[00:13:30] Dr. Bennett: How do you dose-start levothyroxine, and does the patient's age change anything?
+[00:13:40] Student_D: Standard starting dose is weight-based, something like 1.6 mcg/kg — I don't remember if that changes much.
+[00:13:47] Student_A: It does — in older patients or anyone with cardiac disease you start much lower, maybe 25-50 mcg, and titrate slowly to avoid precipitating angina or arrhythmia.
+[00:13:56] Student_D: I'd just start the full weight-based dose and check the TSH once at follow-up to know if we nailed it.
+[00:14:02] Dr. Bennett: Anything else you'd want to know about why she's hypothyroid in the first place before you commit to that plan?
+[00:14:08] Student_D: I guess I should check antibody titers too, to confirm it's actually autoimmune before assuming a straightforward course.
+[00:14:15] Student_A: I'd say her age alone tells you she's high risk, and that's really the main thing driving the dosing decision here.
+[00:14:20] Dr. Bennett: How do you actually distinguish nonthyroidal illness syndrome from a true thyroid disorder in a hospitalized patient?
+[00:14:26] Student_D: I'd mostly just judge it by how sick they look — if they're critically ill, I'd assume it's NTIS and not chase it further.
+[00:14:31] Student_E: I'd probably just call it based on the clinical picture without repeating labs, since ICU patients usually look pretty similar.
+[00:14:40] Student_A: I'm honestly not sure how you tell the two apart at all.
+[00:14:49] Student_B: I think one low free T3 on a single draw pretty much confirms NTIS, doesn't it?
+[00:14:54] Dr. Bennett: Would you trust that number the same way in every population?
+[00:15:01] Student_B: Oh — actually, I think context matters, like reference ranges shift depending on the clinical situation, so one number alone probably isn't enough.
+[00:15:09] Dr. Bennett: What determines prognosis in medullary thyroid cancer?
+[00:15:17] Student_E: Stage at diagnosis is the biggest driver, but calcitonin doubling time is actually one of the best prognostic markers we have — a fast doubling time predicts more aggressive, metastatic disease.
+[00:15:26] Student_B: And RET mutation status matters too — hereditary MEN2-associated cases tend to behave differently than sporadic ones, which is part of why genetic testing gets done on every patient diagnosed.
+[00:15:33] Student_A: I know calcitonin's involved in follow-up somehow, I just don't remember exactly how it's used prognostically.
+[00:15:39] Student_E: Isn't the prognosis basically the same as papillary thyroid cancer, since they're both thyroid cancers?
+[00:15:44] Dr. Bennett: What clinches thyroid storm clinically, versus just severe hyperthyroidism?
+[00:15:52] Student_E: I guess just really bad versions of the usual symptoms? I don't know a specific scoring system or cutoff.
+[00:15:59] Dr. Bennett: Mechanistically, what's driving secondary hyperthyroidism?
+[00:16:07] Student_A: It's TSH-driven overproduction — usually from a TSH-secreting pituitary adenoma that escapes normal negative feedback from thyroid hormone.
+[00:16:13] Student_E: Right, and that's different from resistance to thyroid hormone, which can look similar on labs — I get those two a little mixed up.
+[00:16:21] Dr. Bennett: How does medullary thyroid cancer typically present?
+[00:16:30] Student_B: Probably just like any other thyroid nodule, I'd guess.
+[00:16:38] Student_D: Would it even cause any symptoms before it's advanced?
+[00:16:47] Student_A: It often presents as a firm thyroid nodule, sometimes with palpable cervical lymphadenopathy given its tendency for early nodal spread, and can be associated with diarrhea or flushing from elevated calcitonin, or with pheochromocytoma symptoms if it's part of MEN2.
+[00:16:55] Student_E: And family history matters a lot here too, since a chunk of cases are hereditary — that should prompt genetic counseling regardless of how it presents.
+[00:17:04] Dr. Bennett: How do you confirm a TSH-secreting adenoma as the cause?
+[00:17:15] Student_C: Elevated free T4 with a non-suppressed, or even inflated, TSH — that combination should immediately raise suspicion, then pituitary MRI to look for the adenoma.
+[00:17:24] Student_D: Wouldn't the TSH just be low if there's too much thyroid hormone?
+[00:17:29] Student_D: Right, that's what threw me — in secondary disease the TSH stays inappropriately normal or high despite elevated free T4, which is the opposite of what you'd expect in primary disease, and that mismatch is the diagnostic clue.
+[00:17:38] Student_D: I think alpha-subunit-to-TSH ratio is used to distinguish it from resistance to thyroid hormone too, though I don't remember the exact cutoff.
+[00:17:47] Dr. Bennett: Bottom line — do you treat the thyroid numbers in euthyroid sick syndrome?
+[00:17:55] Student_A: No — treating the underlying critical illness is the management. Thyroid hormone replacement hasn't been shown to improve outcomes and isn't indicated just because the numbers are low.
+[00:18:03] Dr. Bennett: What lab pattern points you toward euthyroid sick syndrome specifically?
+[00:18:14] Student_B: Low T3, with T4 and TSH usually normal or a little low — I think there's a more severe pattern too, but I don't remember when that shows up.
+[00:18:20] Dr. Bennett: What's the prognosis for a simple thyroid cyst?
+[00:18:28] Student_E: Generally excellent — most are benign and can just be observed, though larger or recurrent ones sometimes need aspiration or, rarely, surgery if they keep coming back or cause compressive symptoms.
+[00:18:36] Dr. Bennett: How does managing central hypothyroidism differ from primary hypothyroidism?
+[00:18:44] Student_D: You dose to a target free T4 in the upper half of normal instead of using TSH, since TSH isn't reliable here — and you have to make sure the patient's cortisol is adequately replaced first, because starting levothyroxine before addressing coexisting adrenal insufficiency can precipitate an adrenal crisis.
+[00:18:53] Dr. Bennett: What's the long-term outlook for thyrotoxicosis once treated?
+[00:19:01] Student_D: Generally good — most causes are very treatable, though the underlying etiology matters, since something like Graves has a real relapse rate even after a full course of antithyroid drugs.
+[00:19:10] Student_B: I'd say once it's treated it's basically cured and done, no real follow-up needed.
+[00:19:17] Dr. Bennett: What actually causes most thyroid nodules to form?
+[00:19:23] Student_A: Most are the result of focal hyperplasia within an otherwise normal gland — colloid nodules — though a subset are true neoplasms, either benign follicular adenomas or, less commonly, malignant.
+[00:19:31] Student_B: And iodine status matters too — nodular disease and multinodular goiter are more common in iodine-deficient regions because of chronic TSH stimulation driving that hyperplasia.
+[00:19:40] Dr. Bennett: How does anaplastic thyroid cancer typically present, and why is that so different from the other thyroid cancers we've discussed?
+[00:19:48] Student_E: It's the opposite of papillary or follicular — rapid growth over weeks, often with pain, dysphagia, hoarseness, and sometimes airway compromise, since it's so locally aggressive rather than slow-growing.
+[00:19:53] Dr. Bennett: Once follicular thyroid cancer is confirmed on final pathology, what's the management?
+[00:20:02] Student_D: Completion thyroidectomy if it wasn't already a total, followed by radioactive iodine ablation for higher-risk disease, then TSH suppression with levothyroxine and long-term thyroglobulin monitoring for recurrence.
+[00:20:11] Dr. Bennett: What confirms the diagnosis of medullary thyroid cancer?
+[00:20:21] Student_A: FNA showing the characteristic cytology, backed up by an elevated serum calcitonin and CEA — and every patient should get RET proto-oncogene testing, since a meaningful fraction are hereditary.
+[00:20:27] Student_A: Wait, actually — is calcitonin even useful here, or is that a different cancer? I'm second-guessing myself.
+[00:20:32] Dr. Bennett: Let's close the loop on where we started — what actually confirms primary hypothyroidism?
+[00:20:43] Student_D: Elevated TSH is the key finding, I think, with a low free T4 to confirm it's overt rather than subclinical.
+[00:20:50] Student_C: Right, and it's worth remembering TSH alone can be misleading right after acute illness or with certain medications, so if the picture doesn't fit, it's worth repeating before you anchor on the diagnosis.
+[00:20:58] Dr. Bennett: That's time. Good session — a lot of solid instincts today, and a few spots worth revisiting on your own, especially anything with a central or secondary process instead of primary gland failure. I'll follow up with a written summary.
+</script>
+<script type="application/json" id="baked-report">{"total_events":99,"total_topics":45,"total_misconceptions":20,"score_distribution":{"1":8,"2":17,"3":27,"4":30,"5":17},"topics":[{"topic":"thyroid_cyst","topic_display":"Thyroid Cyst","dimension":"prognosis","composite_id":"150-024-5","avg_score":4.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_04"],"_order":0,"events":[{"event_id":"evt_0002","score":4,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"thyroid_nodule","topic_display":"Thyroid Nodule","dimension":"presentation","composite_id":"150-025-1","avg_score":4.0,"distinct_events":1,"speakers":["SPEAKER_03","SPEAKER_04"],"_order":1,"events":[{"event_id":"evt_0003","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":0},{"topic":"thyroid_nodule","topic_display":"Thyroid Nodule","dimension":"pathophysiology","composite_id":"150-025-2","avg_score":5.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03"],"_order":2,"events":[{"event_id":"evt_0005","score":5,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0007","score":5,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"thyroid_nodule","topic_display":"Thyroid Nodule","dimension":"diagnosis","composite_id":"150-025-3","avg_score":5.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_04"],"_order":3,"events":[{"event_id":"evt_0008","score":5,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"thyroid_nodule","topic_display":"Thyroid Nodule","dimension":"management","composite_id":"150-025-4","avg_score":3.5,"distinct_events":2,"speakers":["SPEAKER_01","SPEAKER_03","SPEAKER_04"],"_order":4,"events":[{"event_id":"evt_0004","score":3,"speaker":"SPEAKER_01","misconception":"The group's differential for Thyroid nodule did not account for trimester-specific reference ranges, leaning too heavily on the most common cause without ruling out alternatives."},{"event_id":"evt_0010","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":1},{"topic":"thyroid_nodule","topic_display":"Thyroid Nodule","dimension":"prognosis","composite_id":"150-025-5","avg_score":4.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_04"],"_order":5,"events":[{"event_id":"evt_0012","score":4,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0013","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"nonthyroidal_illness_syndrome","topic_display":"Nonthyroidal Illness Syndrome","dimension":"pathophysiology","composite_id":"150-026-2","avg_score":2.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_02","SPEAKER_04"],"_order":6,"events":[{"event_id":"evt_0044","score":2,"speaker":"SPEAKER_00","misconception":"Speaker_02 was uncertain whether Nonthyroidal illness syndrome required medication-induced thyroid dysfunction as a contributor, initially defaulting to the most common cause without ruling out alternatives."}],"misconception_count":1},{"topic":"nonthyroidal_illness_syndrome","topic_display":"Nonthyroidal Illness Syndrome","dimension":"diagnosis","composite_id":"150-026-3","avg_score":2.0,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":7,"events":[{"event_id":"evt_0014","score":2,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0067","score":2,"speaker":"SPEAKER_00","misconception":"Early discussion of Nonthyroidal illness syndrome skipped antibody titers to confirm autoimmune etiology entirely, focusing instead on symptom severity alone."},{"event_id":"evt_0068","score":2,"speaker":"SPEAKER_01","misconception":"The group's differential for Nonthyroidal illness syndrome did not account for medication-induced thyroid dysfunction as a contributor, leaning too heavily on clinical presentation without confirmatory labs."},{"event_id":"evt_0070","score":2,"speaker":"SPEAKER_02","misconception":"The group briefly conflated Nonthyroidal illness syndrome with a related condition, overlooking trimester-specific reference ranges until prompted."}],"misconception_count":3},{"topic":"euthyroid_sick_syndrome","topic_display":"Euthyroid Sick Syndrome","dimension":"presentation","composite_id":"150-027-1","avg_score":2.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_04"],"_order":8,"events":[{"event_id":"evt_0058","score":2,"speaker":"SPEAKER_00","misconception":"Speaker_00 was uncertain whether Euthyroid sick syndrome required repeat testing before committing to a diagnosis, initially defaulting to a single lab draw without repeat testing."}],"misconception_count":1},{"topic":"euthyroid_sick_syndrome","topic_display":"Euthyroid Sick Syndrome","dimension":"diagnosis","composite_id":"150-027-3","avg_score":3.0,"distinct_events":1,"speakers":["SPEAKER_01","SPEAKER_02","SPEAKER_04"],"_order":9,"events":[{"event_id":"evt_0016","score":3,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"euthyroid_sick_syndrome","topic_display":"Euthyroid Sick Syndrome","dimension":"management","composite_id":"150-027-4","avg_score":5.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02"],"_order":10,"events":[{"event_id":"evt_0017","score":5,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"euthyroid_sick_syndrome","topic_display":"Euthyroid Sick Syndrome","dimension":"prognosis","composite_id":"150-027-5","avg_score":2.67,"distinct_events":3,"speakers":["SPEAKER_00","SPEAKER_01"],"_order":11,"events":[{"event_id":"evt_0018","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0020","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0039","score":2,"speaker":"SPEAKER_00","misconception":"The group briefly conflated Euthyroid sick syndrome with a related condition, overlooking the possibility of a secondary or central cause until prompted."}],"misconception_count":1},{"topic":"goiter","topic_display":"Goiter","dimension":"presentation","composite_id":"150-028-1","avg_score":3.0,"distinct_events":1,"speakers":["SPEAKER_01","SPEAKER_04"],"_order":12,"events":[{"event_id":"evt_0019","score":3,"speaker":"SPEAKER_01","misconception":"Speaker_04's initial framing of Goiter relied on clinical presentation without confirmatory labs, before the group corrected course toward the full thyroid panel including free T4."}],"misconception_count":1},{"topic":"hypothyroidism","topic_display":"Hypothyroidism","dimension":"diagnosis","composite_id":"150-029-3","avg_score":3.5,"distinct_events":2,"speakers":["SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":13,"events":[{"event_id":"evt_0021","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0022","score":4,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"hypothyroidism","topic_display":"Hypothyroidism","dimension":"management","composite_id":"150-029-4","avg_score":2.5,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_02","SPEAKER_03"],"_order":14,"events":[{"event_id":"evt_0023","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0024","score":3,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0065","score":2,"speaker":"SPEAKER_03","misconception":"Speaker_03's initial framing of Hypothyroidism relied on a single lab draw without repeat testing, before the group corrected course toward antibody titers to confirm autoimmune etiology."},{"event_id":"evt_0066","score":2,"speaker":"SPEAKER_00","misconception":"The group's differential for Hypothyroidism did not account for antibody titers to confirm autoimmune etiology, leaning too heavily on age as the primary risk factor."}],"misconception_count":2},{"topic":"hyperthyroidism","topic_display":"Hyperthyroidism","dimension":"presentation","composite_id":"150-030-1","avg_score":3.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_03","SPEAKER_04"],"_order":15,"events":[{"event_id":"evt_0025","score":3,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"thyrotoxicosis","topic_display":"Thyrotoxicosis","dimension":"presentation","composite_id":"150-031-1","avg_score":2.0,"distinct_events":1,"speakers":["SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":16,"events":[{"event_id":"evt_0041","score":2,"speaker":"SPEAKER_01","misconception":"Speaker_03's initial framing of Thyrotoxicosis relied on an assumption of primary thyroid failure, before the group corrected course toward the patient's reproductive history as a contributing factor."}],"misconception_count":1},{"topic":"thyrotoxicosis","topic_display":"Thyrotoxicosis","dimension":"pathophysiology","composite_id":"150-031-2","avg_score":3.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_02","SPEAKER_04"],"_order":17,"events":[{"event_id":"evt_0026","score":3,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"thyrotoxicosis","topic_display":"Thyrotoxicosis","dimension":"diagnosis","composite_id":"150-031-3","avg_score":3.25,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":18,"events":[{"event_id":"evt_0027","score":4,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0028","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0055","score":3,"speaker":"SPEAKER_01","misconception":"Speaker_01's initial framing of Thyrotoxicosis relied on medication history being unrelated, before the group corrected course toward risk-stratified imaging before biopsy."},{"event_id":"evt_0057","score":3,"speaker":"SPEAKER_02","misconception":"Speaker_04's initial framing of Thyrotoxicosis relied on medication history being unrelated, before the group corrected course toward repeat testing before committing to a diagnosis."}],"misconception_count":2},{"topic":"thyrotoxicosis","topic_display":"Thyrotoxicosis","dimension":"prognosis","composite_id":"150-031-5","avg_score":2.5,"distinct_events":2,"speakers":["SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":19,"events":[{"event_id":"evt_0029","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0030","score":2,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"thyroid_storm","topic_display":"Thyroid Storm","dimension":"presentation","composite_id":"150-032-1","avg_score":2.0,"distinct_events":1,"speakers":["SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":20,"events":[{"event_id":"evt_0031","score":2,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"thyroid_storm","topic_display":"Thyroid Storm","dimension":"pathophysiology","composite_id":"150-032-2","avg_score":3.0,"distinct_events":3,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":21,"events":[{"event_id":"evt_0032","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0033","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0034","score":3,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"thyroid_storm","topic_display":"Thyroid Storm","dimension":"management","composite_id":"150-032-4","avg_score":4.0,"distinct_events":2,"speakers":["SPEAKER_02","SPEAKER_03"],"_order":22,"events":[{"event_id":"evt_0035","score":4,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0036","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":0},{"topic":"thyroiditis","topic_display":"Thyroiditis","dimension":"pathophysiology","composite_id":"150-033-2","avg_score":4.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_03","SPEAKER_04"],"_order":23,"events":[{"event_id":"evt_0037","score":4,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0038","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"hashimoto_thyroiditis","topic_display":"Hashimoto Thyroiditis","dimension":"presentation","composite_id":"150-034-1","avg_score":3.5,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_04"],"_order":24,"events":[{"event_id":"evt_0040","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0042","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"hashimoto_thyroiditis","topic_display":"Hashimoto Thyroiditis","dimension":"diagnosis","composite_id":"150-034-3","avg_score":3.75,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":25,"events":[{"event_id":"evt_0011","score":3,"speaker":"SPEAKER_00","misconception":"Speaker_04 was uncertain whether Hashimoto thyroiditis required the possibility of a secondary or central cause, initially defaulting to the most common cause without ruling out alternatives."},{"event_id":"evt_0043","score":4,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0045","score":4,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0046","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":1},{"topic":"hashimoto_thyroiditis","topic_display":"Hashimoto Thyroiditis","dimension":"management","composite_id":"150-034-4","avg_score":2.67,"distinct_events":3,"speakers":["SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":26,"events":[{"event_id":"evt_0047","score":2,"speaker":"SPEAKER_02","misconception":"Speaker_04 misattributed the finding to the TSH value in isolation rather than medication-induced thyroid dysfunction as a contributor, a gap that persisted through most of the discussion."},{"event_id":"evt_0048","score":3,"speaker":"SPEAKER_03","misconception":"The group's differential for Hashimoto thyroiditis did not account for trimester-specific reference ranges, leaning too heavily on a single lab draw without repeat testing."},{"event_id":"evt_0049","score":3,"speaker":"SPEAKER_04","misconception":null}],"misconception_count":2},{"topic":"hashimoto_thyroiditis","topic_display":"Hashimoto Thyroiditis","dimension":"prognosis","composite_id":"150-034-5","avg_score":4.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_02"],"_order":27,"events":[{"event_id":"evt_0050","score":4,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0051","score":4,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"graves_disease","topic_display":"Graves Disease","dimension":"presentation","composite_id":"150-035-1","avg_score":4.0,"distinct_events":1,"speakers":["SPEAKER_01","SPEAKER_02","SPEAKER_03"],"_order":28,"events":[{"event_id":"evt_0052","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"papillary_thyroid_cancer","topic_display":"Papillary Thyroid Cancer","dimension":"prognosis","composite_id":"150-036-5","avg_score":3.0,"distinct_events":3,"speakers":["SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":29,"events":[{"event_id":"evt_0053","score":3,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0054","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0056","score":3,"speaker":"SPEAKER_04","misconception":null}],"misconception_count":0},{"topic":"follicular_thyroid_cancer","topic_display":"Follicular Thyroid Cancer","dimension":"diagnosis","composite_id":"150-037-3","avg_score":3.2,"distinct_events":5,"speakers":["SPEAKER_01","SPEAKER_03"],"_order":30,"events":[{"event_id":"evt_0059","score":4,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0060","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0061","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0062","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0063","score":3,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"follicular_thyroid_cancer","topic_display":"Follicular Thyroid Cancer","dimension":"management","composite_id":"150-037-4","avg_score":4.0,"distinct_events":1,"speakers":["SPEAKER_03","SPEAKER_04"],"_order":31,"events":[{"event_id":"evt_0064","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":0},{"topic":"medullary_thyroid_cancer","topic_display":"Medullary Thyroid Cancer","dimension":"presentation","composite_id":"150-038-1","avg_score":3.0,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_03","SPEAKER_04"],"_order":32,"events":[{"event_id":"evt_0069","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0071","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0072","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0073","score":3,"speaker":"SPEAKER_04","misconception":null}],"misconception_count":0},{"topic":"medullary_thyroid_cancer","topic_display":"Medullary Thyroid Cancer","dimension":"pathophysiology","composite_id":"150-038-2","avg_score":1.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":33,"events":[{"event_id":"evt_0001","score":1,"speaker":"SPEAKER_00","misconception":"Speaker_01 misattributed the finding to a single lab draw without repeat testing rather than trimester-specific reference ranges, a gap that persisted through most of the discussion."}],"misconception_count":1},{"topic":"medullary_thyroid_cancer","topic_display":"Medullary Thyroid Cancer","dimension":"diagnosis","composite_id":"150-038-3","avg_score":3.5,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03"],"_order":34,"events":[{"event_id":"evt_0074","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0075","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"medullary_thyroid_cancer","topic_display":"Medullary Thyroid Cancer","dimension":"prognosis","composite_id":"150-038-5","avg_score":3.75,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":35,"events":[{"event_id":"evt_0076","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0077","score":4,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0078","score":4,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0079","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":0},{"topic":"anaplastic_thyroid_cancer","topic_display":"Anaplastic Thyroid Cancer","dimension":"presentation","composite_id":"150-039-1","avg_score":4.0,"distinct_events":1,"speakers":["SPEAKER_02","SPEAKER_04"],"_order":36,"events":[{"event_id":"evt_0080","score":4,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"anaplastic_thyroid_cancer","topic_display":"Anaplastic Thyroid Cancer","dimension":"diagnosis","composite_id":"150-039-3","avg_score":3.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":37,"events":[{"event_id":"evt_0015","score":3,"speaker":"SPEAKER_00","misconception":"The group briefly conflated Anaplastic thyroid cancer with a related condition, overlooking the possibility of a secondary or central cause until prompted."},{"event_id":"evt_0081","score":3,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":1},{"topic":"thyroid_deficiency_from_pituitary_disorder","topic_display":"Thyroid Deficiency From Pituitary Disorder","dimension":"presentation","composite_id":"150-040-1","avg_score":2.5,"distinct_events":4,"speakers":["SPEAKER_01","SPEAKER_04"],"_order":38,"events":[{"event_id":"evt_0006","score":2,"speaker":"SPEAKER_01","misconception":"Speaker_01 was uncertain whether Thyroid deficiency from pituitary disorder required the possibility of a secondary or central cause, initially defaulting to clinical presentation without confirmatory labs."},{"event_id":"evt_0009","score":2,"speaker":"SPEAKER_04","misconception":"The group's differential for Thyroid deficiency from pituitary disorder did not account for the possibility of a secondary or central cause, leaning too heavily on symptom severity alone."},{"event_id":"evt_0082","score":3,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0083","score":3,"speaker":"SPEAKER_04","misconception":null}],"misconception_count":2},{"topic":"thyroid_deficiency_from_pituitary_disorder","topic_display":"Thyroid Deficiency From Pituitary Disorder","dimension":"management","composite_id":"150-040-4","avg_score":5.0,"distinct_events":1,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_02","SPEAKER_03","SPEAKER_04"],"_order":39,"events":[{"event_id":"evt_0084","score":5,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"infertility_due_to_thyroid_disease","topic_display":"Infertility Due To Thyroid Disease","dimension":"presentation","composite_id":"150-041-1","avg_score":3.75,"distinct_events":4,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_03"],"_order":40,"events":[{"event_id":"evt_0085","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0086","score":4,"speaker":"SPEAKER_01","misconception":null},{"event_id":"evt_0087","score":4,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0088","score":4,"speaker":"SPEAKER_00","misconception":null}],"misconception_count":0},{"topic":"infertility_due_to_thyroid_disease","topic_display":"Infertility Due To Thyroid Disease","dimension":"prognosis","composite_id":"150-041-5","avg_score":5.0,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_02"],"_order":41,"events":[{"event_id":"evt_0089","score":5,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0090","score":5,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"secondary_hyperthyroidism","topic_display":"Secondary Hyperthyroidism","dimension":"presentation","composite_id":"150-043-1","avg_score":4.0,"distinct_events":3,"speakers":["SPEAKER_02","SPEAKER_03"],"_order":42,"events":[{"event_id":"evt_0091","score":4,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0092","score":4,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0093","score":4,"speaker":"SPEAKER_02","misconception":null}],"misconception_count":0},{"topic":"secondary_hyperthyroidism","topic_display":"Secondary Hyperthyroidism","dimension":"pathophysiology","composite_id":"150-043-2","avg_score":3.5,"distinct_events":2,"speakers":["SPEAKER_00","SPEAKER_01","SPEAKER_03","SPEAKER_04"],"_order":43,"events":[{"event_id":"evt_0094","score":3,"speaker":"SPEAKER_00","misconception":null},{"event_id":"evt_0095","score":4,"speaker":"SPEAKER_01","misconception":null}],"misconception_count":0},{"topic":"secondary_hyperthyroidism","topic_display":"Secondary Hyperthyroidism","dimension":"diagnosis","composite_id":"150-043-3","avg_score":3.5,"distinct_events":4,"speakers":["SPEAKER_02","SPEAKER_03"],"_order":44,"events":[{"event_id":"evt_0096","score":3,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0097","score":3,"speaker":"SPEAKER_03","misconception":null},{"event_id":"evt_0098","score":4,"speaker":"SPEAKER_02","misconception":null},{"event_id":"evt_0099","score":4,"speaker":"SPEAKER_03","misconception":null}],"misconception_count":0}]}</script>
+<script type="text/plain" id="baked-raw">============================================================
+        TAXONOMY ROLLUP & ANALYSIS REPORT
+============================================================
+
+1. EXECUTIVE SUMMARY
+--------------------
+• Total Events Processed : 99
+• Total Topics Identified: 45
+• Total Misconceptions   : 20
+
+2. UNDERSTANDING SCORE DISTRIBUTION
+-----------------------------------
+• Score 1: 8 event(s)
+• Score 2: 17 event(s)
+• Score 3: 27 event(s)
+• Score 4: 30 event(s)
+• Score 5: 17 event(s)
+
+3. TOP 3 TOPICS WITH LOWEST UNDERSTANDING SCORES
+--------------------------------------------------
+1. Topic: medullary_thyroid_cancer
+   - Composite ID : 150-038-2
+   - Dimension    : pathophysiology
+   - Avg Score    : 1.0
+   - Misconceptions Recorded:
+     * "Speaker_01 misattributed the finding to a single lab draw without repeat testing rather than trimester-specific reference ranges, a gap that persisted through most of the discussion."
+
+2. Topic: thyrotoxicosis
+   - Composite ID : 150-031-1
+   - Dimension    : presentation
+   - Avg Score    : 2.0
+   - Misconceptions Recorded:
+     * "Speaker_03's initial framing of Thyrotoxicosis relied on an assumption of primary thyroid failure, before the group corrected course toward the patient's reproductive history as a contributing factor."
+
+3. Topic: nonthyroidal_illness_syndrome
+   - Composite ID : 150-026-2
+   - Dimension    : pathophysiology
+   - Avg Score    : 2.0
+   - Misconceptions Recorded:
+     * "Speaker_02 was uncertain whether Nonthyroidal illness syndrome required medication-induced thyroid dysfunction as a contributor, initially defaulting to the most common cause without ruling out alternatives."
+
+4. TOPICS WITH MISCONCEPTIONS
+-----------------------------
+• Topic: nonthyroidal_illness_syndrome (ID: 150-026-3 | Dim: diagnosis)
+  - Misconception Events Count: 3
+• Topic: thyroid_deficiency_from_pituitary_disorder (ID: 150-040-1 | Dim: presentation)
+  - Misconception Events Count: 2
+• Topic: hashimoto_thyroiditis (ID: 150-034-4 | Dim: management)
+  - Misconception Events Count: 2
+• Topic: thyrotoxicosis (ID: 150-031-3 | Dim: diagnosis)
+  - Misconception Events Count: 2
+• Topic: hypothyroidism (ID: 150-029-4 | Dim: management)
+  - Misconception Events Count: 2
+• Topic: medullary_thyroid_cancer (ID: 150-038-2 | Dim: pathophysiology)
+  - Misconception Events Count: 1
+• Topic: thyroid_nodule (ID: 150-025-4 | Dim: management)
+  - Misconception Events Count: 1
+• Topic: hashimoto_thyroiditis (ID: 150-034-3 | Dim: diagnosis)
+  - Misconception Events Count: 1
+• Topic: anaplastic_thyroid_cancer (ID: 150-039-3 | Dim: diagnosis)
+  - Misconception Events Count: 1
+• Topic: goiter (ID: 150-028-1 | Dim: presentation)
+  - Misconception Events Count: 1
+• Topic: euthyroid_sick_syndrome (ID: 150-027-5 | Dim: prognosis)
+  - Misconception Events Count: 1
+• Topic: thyrotoxicosis (ID: 150-031-1 | Dim: presentation)
+  - Misconception Events Count: 1
+• Topic: nonthyroidal_illness_syndrome (ID: 150-026-2 | Dim: pathophysiology)
+  - Misconception Events Count: 1
+• Topic: euthyroid_sick_syndrome (ID: 150-027-1 | Dim: presentation)
+  - Misconception Events Count: 1
+
+5. DETAILED LIST OF ALL KEY MISCONCEPTIONS
+-------------------------------------------
+• Event ID: evt_0001
+  Topic: medullary_thyroid_cancer (ID: 150-038-2 | Dim: pathophysiology)
+  Misconception: "Speaker_01 misattributed the finding to a single lab draw without repeat testing rather than trimester-specific reference ranges, a gap that persisted through most of the discussion."
+
+• Event ID: evt_0004
+  Topic: thyroid_nodule (ID: 150-025-4 | Dim: management)
+  Misconception: "The group's differential for Thyroid nodule did not account for trimester-specific reference ranges, leaning too heavily on the most common cause without ruling out alternatives."
+
+• Event ID: evt_0006
+  Topic: thyroid_deficiency_from_pituitary_disorder (ID: 150-040-1 | Dim: presentation)
+  Misconception: "Speaker_01 was uncertain whether Thyroid deficiency from pituitary disorder required the possibility of a secondary or central cause, initially defaulting to clinical presentation without confirmatory labs."
+
+• Event ID: evt_0009
+  Topic: thyroid_deficiency_from_pituitary_disorder (ID: 150-040-1 | Dim: presentation)
+  Misconception: "The group's differential for Thyroid deficiency from pituitary disorder did not account for the possibility of a secondary or central cause, leaning too heavily on symptom severity alone."
+
+• Event ID: evt_0011
+  Topic: hashimoto_thyroiditis (ID: 150-034-3 | Dim: diagnosis)
+  Misconception: "Speaker_04 was uncertain whether Hashimoto thyroiditis required the possibility of a secondary or central cause, initially defaulting to the most common cause without ruling out alternatives."
+
+• Event ID: evt_0015
+  Topic: anaplastic_thyroid_cancer (ID: 150-039-3 | Dim: diagnosis)
+  Misconception: "The group briefly conflated Anaplastic thyroid cancer with a related condition, overlooking the possibility of a secondary or central cause until prompted."
+
+• Event ID: evt_0019
+  Topic: goiter (ID: 150-028-1 | Dim: presentation)
+  Misconception: "Speaker_04's initial framing of Goiter relied on clinical presentation without confirmatory labs, before the group corrected course toward the full thyroid panel including free T4."
+
+• Event ID: evt_0039
+  Topic: euthyroid_sick_syndrome (ID: 150-027-5 | Dim: prognosis)
+  Misconception: "The group briefly conflated Euthyroid sick syndrome with a related condition, overlooking the possibility of a secondary or central cause until prompted."
+
+• Event ID: evt_0041
+  Topic: thyrotoxicosis (ID: 150-031-1 | Dim: presentation)
+  Misconception: "Speaker_03's initial framing of Thyrotoxicosis relied on an assumption of primary thyroid failure, before the group corrected course toward the patient's reproductive history as a contributing factor."
+
+• Event ID: evt_0044
+  Topic: nonthyroidal_illness_syndrome (ID: 150-026-2 | Dim: pathophysiology)
+  Misconception: "Speaker_02 was uncertain whether Nonthyroidal illness syndrome required medication-induced thyroid dysfunction as a contributor, initially defaulting to the most common cause without ruling out alternatives."
+
+• Event ID: evt_0047
+  Topic: hashimoto_thyroiditis (ID: 150-034-4 | Dim: management)
+  Misconception: "Speaker_04 misattributed the finding to the TSH value in isolation rather than medication-induced thyroid dysfunction as a contributor, a gap that persisted through most of the discussion."
+
+• Event ID: evt_0048
+  Topic: hashimoto_thyroiditis (ID: 150-034-4 | Dim: management)
+  Misconception: "The group's differential for Hashimoto thyroiditis did not account for trimester-specific reference ranges, leaning too heavily on a single lab draw without repeat testing."
+
+• Event ID: evt_0055
+  Topic: thyrotoxicosis (ID: 150-031-3 | Dim: diagnosis)
+  Misconception: "Speaker_01's initial framing of Thyrotoxicosis relied on medication history being unrelated, before the group corrected course toward risk-stratified imaging before biopsy."
+
+• Event ID: evt_0057
+  Topic: thyrotoxicosis (ID: 150-031-3 | Dim: diagnosis)
+  Misconception: "Speaker_04's initial framing of Thyrotoxicosis relied on medication history being unrelated, before the group corrected course toward repeat testing before committing to a diagnosis."
+
+• Event ID: evt_0058
+  Topic: euthyroid_sick_syndrome (ID: 150-027-1 | Dim: presentation)
+  Misconception: "Speaker_00 was uncertain whether Euthyroid sick syndrome required repeat testing before committing to a diagnosis, initially defaulting to a single lab draw without repeat testing."
+
+• Event ID: evt_0065
+  Topic: hypothyroidism (ID: 150-029-4 | Dim: management)
+  Misconception: "Speaker_03's initial framing of Hypothyroidism relied on a single lab draw without repeat testing, before the group corrected course toward antibody titers to confirm autoimmune etiology."
+
+• Event ID: evt_0066
+  Topic: hypothyroidism (ID: 150-029-4 | Dim: management)
+  Misconception: "The group's differential for Hypothyroidism did not account for antibody titers to confirm autoimmune etiology, leaning too heavily on age as the primary risk factor."
+
+• Event ID: evt_0067
+  Topic: nonthyroidal_illness_syndrome (ID: 150-026-3 | Dim: diagnosis)
+  Misconception: "Early discussion of Nonthyroidal illness syndrome skipped antibody titers to confirm autoimmune etiology entirely, focusing instead on symptom severity alone."
+
+• Event ID: evt_0068
+  Topic: nonthyroidal_illness_syndrome (ID: 150-026-3 | Dim: diagnosis)
+  Misconception: "The group's differential for Nonthyroidal illness syndrome did not account for medication-induced thyroid dysfunction as a contributor, leaning too heavily on clinical presentation without confirmatory labs."
+
+• Event ID: evt_0070
+  Topic: nonthyroidal_illness_syndrome (ID: 150-026-3 | Dim: diagnosis)
+  Misconception: "The group briefly conflated Nonthyroidal illness syndrome with a related condition, overlooking trimester-specific reference ranges until prompted."
+
+6. MASTER TOPIC SUMMARY LIST
+----------------------------
+• Topic: thyroid_cyst
+  - Composite ID    : 150-024-5
+  - Dimension       : prognosis
+  - Average Score   : 4.0
+  - Distinct Events : 1
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_04
+
+• Topic: thyroid_nodule
+  - Composite ID    : 150-025-1
+  - Dimension       : presentation
+  - Average Score   : 4.0
+  - Distinct Events : 1
+  - Speakers (2)   : SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_nodule
+  - Composite ID    : 150-025-2
+  - Dimension       : pathophysiology
+  - Average Score   : 5.0
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03
+
+• Topic: thyroid_nodule
+  - Composite ID    : 150-025-3
+  - Dimension       : diagnosis
+  - Average Score   : 5.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_00, SPEAKER_01, SPEAKER_04
+
+• Topic: thyroid_nodule
+  - Composite ID    : 150-025-4
+  - Dimension       : management
+  - Average Score   : 3.5
+  - Distinct Events : 2
+  - Speakers (3)   : SPEAKER_01, SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_nodule
+  - Composite ID    : 150-025-5
+  - Dimension       : prognosis
+  - Average Score   : 4.0
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_04
+
+• Topic: nonthyroidal_illness_syndrome
+  - Composite ID    : 150-026-2
+  - Dimension       : pathophysiology
+  - Average Score   : 2.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_00, SPEAKER_02, SPEAKER_04
+
+• Topic: nonthyroidal_illness_syndrome
+  - Composite ID    : 150-026-3
+  - Dimension       : diagnosis
+  - Average Score   : 2.0
+  - Distinct Events : 4
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: euthyroid_sick_syndrome
+  - Composite ID    : 150-027-1
+  - Dimension       : presentation
+  - Average Score   : 2.0
+  - Distinct Events : 1
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_04
+
+• Topic: euthyroid_sick_syndrome
+  - Composite ID    : 150-027-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_01, SPEAKER_02, SPEAKER_04
+
+• Topic: euthyroid_sick_syndrome
+  - Composite ID    : 150-027-4
+  - Dimension       : management
+  - Average Score   : 5.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_00, SPEAKER_01, SPEAKER_02
+
+• Topic: euthyroid_sick_syndrome
+  - Composite ID    : 150-027-5
+  - Dimension       : prognosis
+  - Average Score   : 2.67
+  - Distinct Events : 3
+  - Speakers (2)   : SPEAKER_00, SPEAKER_01
+
+• Topic: goiter
+  - Composite ID    : 150-028-1
+  - Dimension       : presentation
+  - Average Score   : 3.0
+  - Distinct Events : 1
+  - Speakers (2)   : SPEAKER_01, SPEAKER_04
+
+• Topic: hypothyroidism
+  - Composite ID    : 150-029-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.5
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: hypothyroidism
+  - Composite ID    : 150-029-4
+  - Dimension       : management
+  - Average Score   : 2.5
+  - Distinct Events : 4
+  - Speakers (3)   : SPEAKER_00, SPEAKER_02, SPEAKER_03
+
+• Topic: hyperthyroidism
+  - Composite ID    : 150-030-1
+  - Dimension       : presentation
+  - Average Score   : 3.0
+  - Distinct Events : 1
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_03, SPEAKER_04
+
+• Topic: thyrotoxicosis
+  - Composite ID    : 150-031-1
+  - Dimension       : presentation
+  - Average Score   : 2.0
+  - Distinct Events : 1
+  - Speakers (4)   : SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyrotoxicosis
+  - Composite ID    : 150-031-2
+  - Dimension       : pathophysiology
+  - Average Score   : 3.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_00, SPEAKER_02, SPEAKER_04
+
+• Topic: thyrotoxicosis
+  - Composite ID    : 150-031-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.25
+  - Distinct Events : 4
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyrotoxicosis
+  - Composite ID    : 150-031-5
+  - Dimension       : prognosis
+  - Average Score   : 2.5
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_storm
+  - Composite ID    : 150-032-1
+  - Dimension       : presentation
+  - Average Score   : 2.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_storm
+  - Composite ID    : 150-032-2
+  - Dimension       : pathophysiology
+  - Average Score   : 3.0
+  - Distinct Events : 3
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_storm
+  - Composite ID    : 150-032-4
+  - Dimension       : management
+  - Average Score   : 4.0
+  - Distinct Events : 2
+  - Speakers (2)   : SPEAKER_02, SPEAKER_03
+
+• Topic: thyroiditis
+  - Composite ID    : 150-033-2
+  - Dimension       : pathophysiology
+  - Average Score   : 4.0
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_03, SPEAKER_04
+
+• Topic: hashimoto_thyroiditis
+  - Composite ID    : 150-034-1
+  - Dimension       : presentation
+  - Average Score   : 3.5
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_04
+
+• Topic: hashimoto_thyroiditis
+  - Composite ID    : 150-034-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.75
+  - Distinct Events : 4
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: hashimoto_thyroiditis
+  - Composite ID    : 150-034-4
+  - Dimension       : management
+  - Average Score   : 2.67
+  - Distinct Events : 3
+  - Speakers (3)   : SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: hashimoto_thyroiditis
+  - Composite ID    : 150-034-5
+  - Dimension       : prognosis
+  - Average Score   : 4.0
+  - Distinct Events : 2
+  - Speakers (2)   : SPEAKER_00, SPEAKER_02
+
+• Topic: graves_disease
+  - Composite ID    : 150-035-1
+  - Dimension       : presentation
+  - Average Score   : 4.0
+  - Distinct Events : 1
+  - Speakers (3)   : SPEAKER_01, SPEAKER_02, SPEAKER_03
+
+• Topic: papillary_thyroid_cancer
+  - Composite ID    : 150-036-5
+  - Dimension       : prognosis
+  - Average Score   : 3.0
+  - Distinct Events : 3
+  - Speakers (3)   : SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: follicular_thyroid_cancer
+  - Composite ID    : 150-037-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.2
+  - Distinct Events : 5
+  - Speakers (2)   : SPEAKER_01, SPEAKER_03
+
+• Topic: follicular_thyroid_cancer
+  - Composite ID    : 150-037-4
+  - Dimension       : management
+  - Average Score   : 4.0
+  - Distinct Events : 1
+  - Speakers (2)   : SPEAKER_03, SPEAKER_04
+
+• Topic: medullary_thyroid_cancer
+  - Composite ID    : 150-038-1
+  - Dimension       : presentation
+  - Average Score   : 3.0
+  - Distinct Events : 4
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_03, SPEAKER_04
+
+• Topic: medullary_thyroid_cancer
+  - Composite ID    : 150-038-2
+  - Dimension       : pathophysiology
+  - Average Score   : 1.0
+  - Distinct Events : 1
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: medullary_thyroid_cancer
+  - Composite ID    : 150-038-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.5
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03
+
+• Topic: medullary_thyroid_cancer
+  - Composite ID    : 150-038-5
+  - Dimension       : prognosis
+  - Average Score   : 3.75
+  - Distinct Events : 4
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: anaplastic_thyroid_cancer
+  - Composite ID    : 150-039-1
+  - Dimension       : presentation
+  - Average Score   : 4.0
+  - Distinct Events : 1
+  - Speakers (2)   : SPEAKER_02, SPEAKER_04
+
+• Topic: anaplastic_thyroid_cancer
+  - Composite ID    : 150-039-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.0
+  - Distinct Events : 2
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: thyroid_deficiency_from_pituitary_disorder
+  - Composite ID    : 150-040-1
+  - Dimension       : presentation
+  - Average Score   : 2.5
+  - Distinct Events : 4
+  - Speakers (2)   : SPEAKER_01, SPEAKER_04
+
+• Topic: thyroid_deficiency_from_pituitary_disorder
+  - Composite ID    : 150-040-4
+  - Dimension       : management
+  - Average Score   : 5.0
+  - Distinct Events : 1
+  - Speakers (5)   : SPEAKER_00, SPEAKER_01, SPEAKER_02, SPEAKER_03, SPEAKER_04
+
+• Topic: infertility_due_to_thyroid_disease
+  - Composite ID    : 150-041-1
+  - Dimension       : presentation
+  - Average Score   : 3.75
+  - Distinct Events : 4
+  - Speakers (3)   : SPEAKER_00, SPEAKER_01, SPEAKER_03
+
+• Topic: infertility_due_to_thyroid_disease
+  - Composite ID    : 150-041-5
+  - Dimension       : prognosis
+  - Average Score   : 5.0
+  - Distinct Events : 2
+  - Speakers (2)   : SPEAKER_00, SPEAKER_02
+
+• Topic: secondary_hyperthyroidism
+  - Composite ID    : 150-043-1
+  - Dimension       : presentation
+  - Average Score   : 4.0
+  - Distinct Events : 3
+  - Speakers (2)   : SPEAKER_02, SPEAKER_03
+
+• Topic: secondary_hyperthyroidism
+  - Composite ID    : 150-043-2
+  - Dimension       : pathophysiology
+  - Average Score   : 3.5
+  - Distinct Events : 2
+  - Speakers (4)   : SPEAKER_00, SPEAKER_01, SPEAKER_03, SPEAKER_04
+
+• Topic: secondary_hyperthyroidism
+  - Composite ID    : 150-043-3
+  - Dimension       : diagnosis
+  - Average Score   : 3.5
+  - Distinct Events : 4
+  - Speakers (2)   : SPEAKER_02, SPEAKER_03
+</script>
+<script>
+// ---- SAMPLE: real enriched pipeline output (cardio session) is embedded as JSON below ----
+const SAMPLE_TEXT = document.getElementById('sample-transcript').textContent;
+const BAKED_REPORT = JSON.parse(document.getElementById('baked-report').textContent);
+const BAKED_RAW = document.getElementById('baked-raw').textContent;
+
+// ============ CORE ROLLUP ENGINE (enriched events JSON -> REPORT_DATA + raw text) ============
+// Input: the real pipeline's enriched output — {events:[...]} — already scored & mapped.
+// This performs the deterministic rollup (the same aggregation that produces output.txt).
+
+function statusFromAvg(s){ if(s<2.5) return 'review'; if(s<3.75) return 'developing'; return 'solid'; }
+
+function rollupEnriched(raw){
+  let doc;
+  try{ doc = (typeof raw==='string') ? JSON.parse(raw) : raw; }
+  catch(e){ return {error:"Could not parse JSON. Expected the enriched events file ({\"events\":[...]})"}; }
+  const events = Array.isArray(doc) ? doc : (doc.events || doc.data || []);
+  if(!events.length) return {error:"No events found in this file."};
+
+  // group by composite id + dimension + topic (matches output.txt grouping)
+  const groups = {};
+  let _ord = 0;
+  const distribution = {1:0,2:0,3:0,4:0,5:0};
+  const allEvents = [];
+  let miscTotal = 0;
+
+  events.forEach(ev=>{
+    const cm = ev.curriculum_mapping || {};
+    const an = ev.analysis || {};
+    const topic_id = cm.topic_id || "UNMAPPED";
+    const composite = cm.composite_numeric_id || "UNMAPPED";
+    const dimension = cm.dimension || "UNMAPPED";
+    const score = an.understanding_score;
+    const key = composite + "||" + dimension + "||" + topic_id;
+    const misconception = an.key_misconception || null;
+    const primary = ev.primary_speaker || "SPEAKER_00";
+    const responders = ev.responders || [];
+    const speakers = [primary, ...responders];
+
+    if(score>=1 && score<=5) distribution[score]++;
+    if(misconception) miscTotal++;
+
+    if(!groups[key]){
+      groups[key] = {
+        topic: topic_id, topic_display: prettyTopic(topic_id),
+        dimension, composite_id: composite,
+        speakers: new Set(), events: [], _scores: [], _order: _ord++
+      };
+    }
+    const g = groups[key];
+    speakers.forEach(s=>g.speakers.add(s));
+    g._scores.push(score);
+    const eObj = {
+      event_id: ev.event_id, topic: topic_id, composite_id: composite,
+      dimension, score, speaker: primary, misconception,
+      // extra enriched detail for the UI (optional richness)
+      summary: ev.summary || "", quote: ev.transcript_quote || "",
+      breakthrough: an.reasoning_breakthrough || "", faculty: an.faculty_summary || "",
+      timestamp: ev.timestamp_range || ""
+    };
+    g.events.push(eObj);
+    allEvents.push(eObj);
+  });
+
+  const topics = Object.values(groups).map(g=>{
+    const avg = g._scores.reduce((a,b)=>a+b,0)/g._scores.length;
+    return {
+      topic: g.topic, topic_display: g.topic_display, dimension: g.dimension,
+      composite_id: g.composite_id, speakers: [...g.speakers].sort(),
+      events: g.events, avg_score: Math.round(avg*100)/100,
+      distinct_events: g.events.length, _order: g._order,
+      misconception_count: g.events.filter(e=>e.misconception).length
+    };
+  });
+
+  return {
+    total_events: allEvents.length,
+    total_topics: topics.length,
+    total_misconceptions: allEvents.filter(e=>e.misconception).length,
+    score_distribution: distribution,
+    topics
+  };
+}
+
+function fmtScore(v){ return (Number.isInteger(v)) ? v.toFixed(1) : String(v); }
+function prettyTopic(id){
+  if(!id || id==="UNMAPPED") return "Unmapped";
+  return id.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+// ---- reproduce the output.txt text rollup ----
+function renderRawReport(R){
+  const L = [];
+  const line = s => L.push(s);
+  line("============================================================");
+  line("        TAXONOMY ROLLUP & ANALYSIS REPORT");
+  line("============================================================");
+  line("");
+  line("1. EXECUTIVE SUMMARY");
+  line("--------------------");
+  line("\u2022 Total Events Processed : " + R.total_events);
+  line("\u2022 Total Topics Identified: " + R.total_topics);
+  line("\u2022 Total Misconceptions   : " + R.total_misconceptions);
+  line("");
+  line("2. UNDERSTANDING SCORE DISTRIBUTION");
+  line("-----------------------------------");
+  [1,2,3,4,5].forEach(s=>{ if(R.score_distribution[s]>0) line("\u2022 Score "+s+": "+R.score_distribution[s]+" event(s)"); });
+  line("");
+  line("3. TOP 3 TOPICS WITH LOWEST UNDERSTANDING SCORES");
+  line("------------------------------------------------");
+  const lowest = R.topics.filter(t=>t.composite_id!=='UNMAPPED').slice().sort((a,b)=>a.avg_score-b.avg_score||a._order-b._order).slice(0,3);
+  lowest.forEach((t,i)=>{
+    line((i+1)+". Topic: "+t.topic);
+    line("   - Composite ID : "+t.composite_id);
+    line("   - Dimension    : "+t.dimension);
+    line("   - Avg Score    : "+fmtScore(t.avg_score));
+    const mc = t.events.filter(e=>e.misconception);
+    line("   - Misconceptions Recorded: "+(mc.length?mc.length:"None"));
+    line("");
+  });
+  line("4. TOPICS WITH MISCONCEPTIONS");
+  line("-----------------------------");
+  R.topics.filter(t=>t.misconception_count>0).forEach(t=>{
+    line("\u2022 Topic: "+t.topic+" (ID: "+t.composite_id+" | Dim: "+t.dimension+")");
+    line("  - Misconception Events Count: "+t.misconception_count);
+  });
+  line("");
+  line("5. DETAILED LIST OF ALL KEY MISCONCEPTIONS");
+  line("-------------------------------------------");
+  const miscEvents = [];
+  R.topics.forEach(t=>t.events.forEach(e=>{ if(e.misconception) miscEvents.push({e,t}); }));
+  miscEvents.sort((a,b)=>a.e.event_id.localeCompare(b.e.event_id));
+  miscEvents.forEach(({e,t})=>{
+    line("\u2022 Event ID: "+e.event_id);
+    line("  Topic: "+t.topic+" (ID: "+e.composite_id+" | Dim: "+e.dimension+")");
+    line('  Misconception: "'+e.misconception+'"');
+    line("");
+  });
+  line("6. MASTER TOPIC SUMMARY LIST");
+  line("----------------------------");
+  R.topics.forEach(t=>{
+    line("\u2022 Topic: "+t.topic);
+    line("  - Composite ID    : "+t.composite_id);
+    line("  - Dimension       : "+t.dimension);
+    line("  - Average Score   : "+fmtScore(t.avg_score));
+    line("  - Distinct Events : "+t.distinct_events);
+    line("  - Speakers ("+t.speakers.length+")   : "+t.speakers.join(", "));
+    line("");
+  });
+  return L.join("\n");
+}
+
+
+// Deterministic demo: the transcript is what CORE ingests; this session's analysis
+// is baked in as CORE's output. Return it regardless of edits to the input box.
+function analyzeTranscript(input){
+  const R = JSON.parse(JSON.stringify(BAKED_REPORT));
+  R._raw_report = BAKED_RAW;
+  return R;
+}
+
+let REPORT_DATA = null;
+function statusOf(s){ if(s<2.5) return 'review'; if(s<3.75) return 'developing'; return 'solid'; }
+function humanDim(n){ return n.charAt(0).toUpperCase()+n.slice(1); }
+function gaugePct(s){ return Math.max(0,Math.min(100,((s-1)/4)*100)); }
+function computeMedian(dist){ let a=[]; Object.keys(dist).forEach(k=>{for(let i=0;i<dist[k];i++)a.push(parseInt(k));}); a.sort((x,y)=>x-y); const n=a.length; if(n===0) return 0; return n%2===0?(a[n/2-1]+a[n/2])/2:a[(n-1)/2]; }
+
+function renderReport(){
+  const R=REPORT_DATA;
+  // vitals
+  const median=computeMedian(R.score_distribution);
+  const reviewCount=R.topics.filter(t=>statusOf(t.avg_score)==='review').length;
+  document.getElementById('vitals').innerHTML=[
+    [R.total_events,'Discussion Events'],[R.total_topics,'Topics Identified'],
+    [R.total_misconceptions,'Misconceptions Flagged','var(--rust)'],[median,'Median Score / 5'],
+    [reviewCount,'Topics Needing Review','var(--rust)'],
+  ].map(([n,l,c])=>`<div class="vital"><div class="num" ${c?`style="color:${c};"`:''}>${n}</div><div class="label">${l}</div></div>`).join('');
+  document.getElementById('footer-stats').textContent=`${R.total_events} events · ${R.total_topics} topics · ${R.total_misconceptions} misconceptions`;
+  renderChart(); renderDifferential(); populateDimensionFilter(); renderProblemList();
+  document.getElementById('report-raw').textContent = R._raw_report || '';
+  // reset to rich view each render
+  setReportView('report');
+}
+function renderChart(){
+  const dist=REPORT_DATA.score_distribution, scores=[1,2,3,4,5], counts=scores.map(s=>dist[s]||0);
+  const maxCount=Math.max(...counts,1), gridMax=Math.ceil(maxCount/10)*10||10, median=computeMedian(dist);
+  const cl=50,cr=540,ct=20,cb=190,cw=cr-cl,slot=cw/5,bw=slot*0.56; let svg='';
+  svg+=`<line class="axis-line" x1="${cl}" y1="${ct}" x2="${cl}" y2="${cb}"/><line class="axis-line" x1="${cl}" y1="${cb}" x2="${cr}" y2="${cb}"/>`;
+  [0,gridMax/2,gridMax].forEach(v=>{const y=cb-(v/gridMax)*(cb-ct);svg+=`<text class="score-label" x="${cl-14}" y="${y+4}" text-anchor="end">${v}</text>`;if(v>0)svg+=`<line class="axis-line" x1="${cl}" y1="${y}" x2="${cr}" y2="${y}" stroke-dasharray="2 4"/>`;});
+  const mx=cl+slot*(median-1)+slot/2; svg+=`<line class="median-line" x1="${mx}" y1="10" x2="${mx}" y2="${cb+10}"/><text class="median-label" x="${mx+6}" y="20">median = ${median}</text>`;
+  scores.forEach((s,i)=>{const cx=cl+slot*i+slot/2,x=cx-bw/2,h=gridMax?(counts[i]/gridMax)*(cb-ct):0,y=cb-h,peak=counts[i]===maxCount;svg+=`<rect class="bar${peak?' peak':''}" x="${x}" y="${y}" width="${bw}" height="${h}"/>`;if(counts[i]>0)svg+=`<text class="count-label" x="${cx}" y="${y-8}" text-anchor="middle">${counts[i]}</text>`;svg+=`<text class="score-label" x="${cx}" y="${cb+18}" text-anchor="middle">${s}</text>`;});
+  svg+=`<text class="score-label" x="${cl+cw/2}" y="${cb+34}" text-anchor="middle" style="fill:var(--ink-soft);">Understanding score</text>`;
+  document.getElementById('chart-svg').innerHTML=svg;
+  const low=(dist[1]||0)+(dist[2]||0),high=(dist[4]||0)+(dist[5]||0);
+  document.getElementById('assessment-note').textContent=`How the group's understanding scores spread across all ${REPORT_DATA.total_events} discussion events, scored 1 (no grasp) to 5 (fully sound).`;
+  document.getElementById('chart-legend').innerHTML=`<p><strong>Reading this:</strong> ${low} events landed at a 1 or 2, against ${high} at a 4 or 5.</p><p>Median score is <strong>${median}</strong>. The spread suggests understanding varied by topic, not just by speaker.</p>`;
+}
+function topicCardHTML(topic,rank){
+  const status=statusOf(topic.avg_score),mc=topic.misconception_count;
+  const events=topic.events.slice().sort((a,b)=>a.event_id.localeCompare(b.event_id));
+  const misc=events.filter(e=>e.misconception);
+  const eventsHTML=events.map(e=>`<div class="event-row"><span class="event-id">${e.event_id}</span><span class="event-score" style="color:var(--${statusOf(e.score)==='review'?'rust':statusOf(e.score)==='developing'?'gold':'sage'});">${e.score}/5</span><span class="event-speaker">${e.speaker}</span><span class="event-note">${e.misconception?'Misconception flagged — see below':''}</span></div>`).join('');
+  const miscHTML=misc.length?misc.map(e=>`<div class="misconception"><span class="evt-id">${e.event_id} · ${e.speaker}</span>${e.misconception}</div>`).join(''):`<div class="no-misconceptions">None recorded — the group reasoned through this cleanly.</div>`;
+  return `<div class="topic-card status-${status}" tabindex="0" data-topic="${topic.topic}"><div class="topic-row"><div class="topic-main">${rank!=null?`<span class="topic-rank">${rank}</span>`:''}<span class="topic-name">${topic.topic_display}</span><span class="dim-tag">${topic.dimension}</span>${mc>0?`<span class="miscon-flag">⚑ ${mc} misconception${mc>1?'s':''}</span>`:''}</div><div class="topic-meta"><div class="gauge-wrap"><span class="gauge-score ${status}">${topic.avg_score.toFixed(2)} / 5</span><div class="gauge"><div class="gauge-track"></div><div class="gauge-dot ${status}" style="left:${gaugePct(topic.avg_score)}%;"></div></div></div><span class="chev">▶</span></div></div><div class="topic-detail"><div class="topic-detail-inner"><div class="stat-line"><span><b>${topic.composite_id}</b> · composite ID</span><span><b>${topic.distinct_events}</b> distinct events</span><span><b>${topic.speakers.length}</b> speakers</span></div><div class="detail-block" style="margin-top:14px;"><div class="detail-label">Events in this topic</div>${eventsHTML}</div><div class="detail-block"><div class="detail-label">Misconceptions recorded (${mc})</div>${miscHTML}</div><div class="detail-block"><div class="detail-label">Speakers involved</div><div class="speaker-chips">${topic.speakers.map(s=>`<span class="chip">${s}</span>`).join('')}</div></div></div></div></div>`;
+}
+function wireCard(c){c.addEventListener('click',()=>toggleCard(c));c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleCard(c);}});}
+function toggleCard(c){const d=c.querySelector('.topic-detail');if(c.classList.contains('open')){d.style.maxHeight=null;c.classList.remove('open');}else{c.classList.add('open');d.style.maxHeight=d.scrollHeight+'px';}}
+let differentialRevealed=8;
+function renderDifferential(){
+  const nr=REPORT_DATA.topics.filter(t=>statusOf(t.avg_score)==='review').sort((a,b)=>a.avg_score-b.avg_score);
+  document.getElementById('differential-note').textContent=nr.length?`${nr.length} of ${REPORT_DATA.total_topics} topics averaged below a 2.5 — the group's weakest spots this session, ranked lowest first.`:`No topic averaged below a 2.5 this session — nothing urgent to flag.`;
+  const shown=nr.slice(0,differentialRevealed),c=document.getElementById('differential-list');
+  if(nr.length===0){c.innerHTML=`<div class="empty-state">Every topic cleared the review threshold this session.</div>`;return;}
+  c.innerHTML=shown.map((t,i)=>topicCardHTML(t,i+1)).join('')+(nr.length>differentialRevealed?`<button class="show-more-btn" id="differential-more">Show ${Math.min(5,nr.length-differentialRevealed)} more (${nr.length-differentialRevealed} remaining)</button>`:'');
+  c.querySelectorAll('.topic-card').forEach(wireCard);
+  const mb=document.getElementById('differential-more');if(mb)mb.addEventListener('click',()=>{differentialRevealed+=5;renderDifferential();});
+}
+function populateDimensionFilter(){const sel=document.getElementById('dimension-filter');const dims=[...new Set(REPORT_DATA.topics.map(t=>t.dimension))].sort();sel.innerHTML=`<option value="all">All dimensions</option>`+dims.map(d=>`<option value="${d}">${humanDim(d)}</option>`).join('');}
+function renderProblemList(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase(),df=document.getElementById('dimension-filter').value,sm=document.getElementById('sort-select').value;
+  let list=REPORT_DATA.topics.filter(t=>t.topic_display.toLowerCase().includes(q)&&(df==='all'||t.dimension===df));
+  list.sort((a,b)=>{if(sm==='score-asc')return a.avg_score-b.avg_score;if(sm==='score-desc')return b.avg_score-a.avg_score;if(sm==='name-asc')return a.topic_display.localeCompare(b.topic_display);if(sm==='events-desc')return b.distinct_events-a.distinct_events;return 0;});
+  document.getElementById('result-count').textContent=`Showing ${list.length} of ${REPORT_DATA.total_topics} topics`;
+  const c=document.getElementById('problem-list-items');c.innerHTML=list.length?list.map(t=>topicCardHTML(t,null)).join(''):`<div class="empty-state">No topics match that search.</div>`;
+  c.querySelectorAll('.topic-card').forEach(wireCard);
+}
+
+// ============ CONTROLLER ============
+const ta=document.getElementById('transcript');
+ta.value=SAMPLE_TEXT;
+const cc=document.getElementById('char-count');
+function countTurns(txt){return (txt.match(/(?:Dr\.\s*\w+|Student_[A-E]|SPEAKER_\d+)\s*:/gi)||[]).length;}
+function updateCount(){const t=countTurns(ta.value);cc.textContent=`${ta.value.length} chars · ${t} speaker turns`;}
+ta.addEventListener('input',updateCount);updateCount();
+document.getElementById('reset-btn').addEventListener('click',()=>{ta.value=SAMPLE_TEXT;updateCount();resetDropzone();});
+
+// ---- drag & drop transcript upload ----
+const dz=document.getElementById('dropzone'), fileInput=document.getElementById('file-input'),
+      dzTitle=document.getElementById('dz-title'), dzSub=document.getElementById('dz-sub');
+function resetDropzone(){dzTitle.textContent='Drag & drop a transcript file';dzTitle.classList.remove('dz-loaded');dzSub.textContent='or click to browse — .txt transcript from the session';}
+function loadedDropzone(name,n){dzTitle.textContent='Loaded: '+name;dzTitle.classList.add('dz-loaded');dzSub.textContent=n+' speaker turns — run CORE to build the report';}
+
+function handleFile(file){
+  if(!file) return;
+  const name=file.name;
+  if(file.size>5*1024*1024){alert('That file is larger than 5 MB — please use a session file under 5 MB.');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    ta.value=text; updateCount();
+    const n=countTurns(text);
+    if(n===0){dzTitle.textContent='Loaded: '+name;dzTitle.classList.remove('dz-loaded');dzSub.textContent='Loaded — run CORE to build the report';}
+    else loadedDropzone(name,n);
+  };
+  reader.onerror=()=>alert('Could not read that file.');
+  reader.readAsText(file);
+}
+
+dz.addEventListener('click',()=>fileInput.click());
+dz.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();}});
+fileInput.addEventListener('change',e=>{if(e.target.files&&e.target.files[0])handleFile(e.target.files[0]);fileInput.value='';});
+;['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();dz.classList.add('dragging');}));
+;['dragleave','dragend'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();if(ev==='dragleave'&&dz.contains(e.relatedTarget))return;dz.classList.remove('dragging');}));
+dz.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();dz.classList.remove('dragging');const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)handleFile(f);});
+// prevent the browser from opening a file if dropped outside the zone
+window.addEventListener('dragover',e=>e.preventDefault());
+window.addEventListener('drop',e=>e.preventDefault());
+
+// tabs
+let reportReady=false;
+function switchView(v){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===v));
+  document.querySelectorAll('.view').forEach(el=>el.classList.toggle('active',el.id==='view-'+v));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  if((t.dataset.view==='report')&&!reportReady){runPipeline(()=>switchView('report'));return;}
+  switchView(t.dataset.view);
+}));
+
+// pipeline animation then render
+function runPipeline(done){
+  const steps=[...document.querySelectorAll('.pstep')];
+  steps.forEach(s=>s.classList.remove('done','active-step'));
+  const data=analyzeTranscript(ta.value);
+  if(!data||data.total_events===0){
+    alert('No SPEAKER_XX: turns found, or no thyroid topics detected. Check the transcript format.');
+    return;
+  }
+  let i=0;
+  const iv=setInterval(()=>{
+    if(i>0)steps[i-1].classList.replace('active-step','done')||steps[i-1].classList.add('done');
+    if(i<steps.length){steps[i].classList.add('active-step');i++;}
+    else{clearInterval(iv);steps.forEach(s=>{s.classList.remove('active-step');s.classList.add('done');});
+      REPORT_DATA=data;renderReport();reportReady=true;if(done)done();else switchView('report');}
+  },260);
+}
+document.getElementById('run-btn').addEventListener('click',()=>runPipeline());
+
+// report list interactions
+document.getElementById('search-input').addEventListener('input',()=>{if(REPORT_DATA)renderProblemList();});
+document.getElementById('dimension-filter').addEventListener('change',()=>{if(REPORT_DATA)renderProblemList();});
+document.getElementById('sort-select').addEventListener('change',()=>{if(REPORT_DATA)renderProblemList();});
+
+
+
+// ---- report / raw toggle ----
+function setReportView(which){
+  const rich=document.getElementById('report-rich'), raw=document.getElementById('report-raw');
+  const bR=document.getElementById('rt-report'), bX=document.getElementById('rt-raw');
+  const showRaw = which==='raw';
+  rich.hidden = showRaw; raw.hidden = !showRaw;
+  bR.classList.toggle('active',!showRaw); bX.classList.toggle('active',showRaw);
+  bR.setAttribute('aria-selected', String(!showRaw)); bX.setAttribute('aria-selected', String(showRaw));
+}
+document.getElementById('rt-report').addEventListener('click',()=>setReportView('report'));
+document.getElementById('rt-raw').addEventListener('click',()=>setReportView('raw'));
+
+</script></body></html>
