@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faculty Taxonomy Rollup Report</title>
+  <style>
+    :root {
+      --bg-color: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --primary: #2563eb;
+      --primary-light: #eff6ff;
+      --accent-red: #ef4444;
+      --accent-green: #10b981;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem; }
+
+    /* Single-sheet Layout Container */
+    .sheet {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Masthead */
+    .masthead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .masthead h1 { font-size: 1.75rem; font-weight: 700; color: var(--text-main); }
+    .masthead .subtitle { font-size: 0.875rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+    /* Vitals / Summary Cards */
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .vital-card {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+    .vital-card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; }
+    .vital-card .value { font-size: 1.875rem; font-weight: 700; margin-top: 0.5rem; color: var(--text-main); }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      align-items: center;
+    }
+    .search-input {
+      flex: 1;
+      padding: 0.625rem 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+
+    /* Data Table / Accordion Structure */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+    .data-table th, .data-table td {
+      padding: 0.875rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .data-table th { background: var(--bg-color); color: var(--text-muted); font-weight: 600; }
+    .topic-row { cursor: pointer; transition: background 0.15s ease; }
+    .topic-row:hover { background: var(--primary-light); }
+    .details-row { display: none; background: #fafafa; }
+    .details-row.open { display: table-row; }
+    .details-content { padding: 1rem; color: var(--text-muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-alert { background: #fef2f2; color: var(--accent-red); }
+    .badge-ok { background: #ecfdf5; color: var(--accent-green); }
+  </style>
+</head>
+<body>
+
+  <div class="sheet">
+    <!-- Masthead -->
+    <header class="masthead">
+      <div>
+        <h1>Faculty Taxonomy Summary</h1>
+        <p class="subtitle">Aggregated Performance & Misconception Analytics</p>
+      </div>
+      <div style="text-align: right;">
+        <span class="badge badge-ok">Status: Validated</span>
+      </div>
+    </header>
+
+    <!-- Vitals KPI Cards -->
+    <section class="vitals-grid">
+      <div class="vital-card">
+        <div class="label">Overall Avg Score</div>
+        <div class="value" id="kpi-score">{{ report.summary.overall_avg_score | default('N/A') }}%</div>
+      </div>
+      <div class="vital-card">
+        <div class="label">Topics Evaluated</div>
+        <div class="value" id="kpi-topics">{{ report.summary.total_topics | default(report.topics | length) }}</div>
+      </div>
+      <div class="vital-card">
+        <div class="label">Misconceptions Flagged</div>
+        <div class="value" id="kpi-misconceptions">{{ report.summary.total_misconceptions | default(0) }}</div>
+      </div>
+    </section>
+
+    <!-- Controls -->
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="Search taxonomy topics or keywords..." onkeyup="filterTopics()">
+    </div>
+
+    <!-- Main Content Breakdown Table -->
+    <table class="data-table" id="taxonomyTable">
+      <thead>
+        <tr>
+          <th>Topic / Category</th>
+          <th>Items Evaluated</th>
+          <th>Average Score</th>
+          <th>Misconception Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in report.topics %}
+        <tr class="topic-row" onclick="toggleAccordion('desc-{{ loop.index }}')">
+          <td><strong>{{ item.name }}</strong></td>
+          <td>{{ item.item_count }}</td>
+          <td>{{ item.avg_score }}%</td>
+          <td>
+            {% if item.misconception_count > 0 %}
+              <span class="badge badge-alert">{{ item.misconception_count }} Flagged</span>
+            {% else %}
+              <span class="badge badge-ok">0</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr id="desc-{{ loop.index }}" class="details-row">
+          <td colspan="4">
+            <div class="details-content">
+              <p><strong>Breakdown:</strong> {{ item.description | default('No detailed summary available for this taxonomy node.') }}</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Data Embedded Directly for Standalone Client Interactivity -->
+  <script id="report-data" type="application/json">
+    {{ json_payload | safe }}
+  </script>
+
+  <script>
+    // Parse embedded JSON data on load
+    const rawData = JSON.parse(document.getElementById('report-data').textContent);
+
+    function toggleAccordion(elementId) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.classList.toggle('open');
+      }
+    }
+
+    function filterTopics() {
+      const input = document.getElementById('searchInput').value.toLowerCase();
+      const rows = document.querySelectorAll('#taxonomyTable tbody .topic-row');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const nextRow = row.nextElementSibling;
+        
+        if (text.includes(input)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+          if (nextRow && nextRow.classList.contains('details-row')) {
+            nextRow.classList.remove('open');
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

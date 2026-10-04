@@ -126,7 +126,7 @@ def process_taxonomy_rollups(
         })
 
     # ==========================================
-    # (3) Top 3 Topics with Lowest Average Understanding Score
+    # (3) Top 5 Topics with Lowest Average Understanding Score
     # ==========================================
     mapped_topics = [t for t in master_topic_list if t["composite_numeric_id"] != "UNMAPPED"]
     ranking_pool = mapped_topics if mapped_topics else master_topic_list
@@ -136,10 +136,10 @@ def process_taxonomy_rollups(
         key=lambda x: (x["average_understanding_score"] if x["average_understanding_score"] is not None else float("inf"))
     )
     
-    lowest_3_topics_raw = sorted_topics[:3]
-    lowest_3_topics = []
+    lowest_5_topics_raw = sorted_topics[:5]
+    lowest_5_topics = []
 
-    for topic in lowest_3_topics_raw:
+    for topic in lowest_5_topics_raw:
         misconceptions = [
             e.get("analysis", {}).get("key_misconception")
             for e in topic["events"]
@@ -147,7 +147,7 @@ def process_taxonomy_rollups(
             and str(e.get("analysis", {}).get("key_misconception")).strip() != ""
         ]
         
-        lowest_3_topics.append({
+        lowest_5_topics.append({
             "composite_numeric_id": topic["composite_numeric_id"],
             "topic_id": topic["topic_id"],
             "dimension": topic["dimension"],
@@ -176,6 +176,12 @@ def process_taxonomy_rollups(
                 "misconception_events_count": len(misconception_events),
                 "events_with_misconceptions": misconception_events
             })
+    # Extract Top 5 Most Misunderstandings without losing the full list above
+    top_5_misconception_topics = sorted(
+        topics_with_misconceptions,
+        key=lambda x: x["misconception_events_count"],
+        reverse=True
+    )[:5]
 
     # ==========================================
     # (5) List of misconceptions - All non-null key_misconception fields
@@ -202,8 +208,9 @@ def process_taxonomy_rollups(
             "total_misconceptions_found": len(all_key_misconceptions)
         },
         "master_topic_list": master_topic_list,
-        "lowest_3_understanding_score_topics": lowest_3_topics,
-        "topics_with_misconceptions": topics_with_misconceptions,
+        "lowest_5_understanding_score_topics": lowest_5_topics,
+        "top_5_misconception_topics": top_5_misconception_topics,  # Top 5 slice for easy UI toggle
+        "topics_with_misconceptions": topics_with_misconceptions,  # Full metadata preserved
         "all_key_misconceptions_list": all_key_misconceptions
     }
 
@@ -240,11 +247,11 @@ def process_taxonomy_rollups(
         report_lines.append("• No understanding scores recorded.")
     report_lines.append("")
 
-    # 3. Lowest 3 Topics
-    report_lines.append("3. TOP 3 TOPICS WITH LOWEST UNDERSTANDING SCORES")
+    # 3. Lowest 5 Topics
+    report_lines.append("3. TOP 5 TOPICS WITH LOWEST UNDERSTANDING SCORES")
     report_lines.append("------------------------------------------------")
-    if lowest_3_topics:
-        for idx, topic in enumerate(lowest_3_topics, 1):
+    if lowest_5_topics:
+        for idx, topic in enumerate(lowest_5_topics, 1):
             avg_str = f"{topic['average_understanding_score']}" if topic['average_understanding_score'] is not None else "N/A"
             report_lines.append(f"{idx}. Topic: {topic['topic_id']}")
             report_lines.append(f"   - Composite ID : {topic['composite_numeric_id']}")
